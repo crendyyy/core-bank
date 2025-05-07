@@ -14,6 +14,11 @@ import {
   Space,
   Divider,
   Alert,
+  Row,
+  Col,
+  Badge,
+  Tooltip,
+  Flex,
 } from "antd";
 import {
   DownloadOutlined,
@@ -21,9 +26,20 @@ import {
   FileSearchOutlined,
   BankOutlined,
   CalendarOutlined,
+  ReloadOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+  InfoCircleOutlined,
 } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
+
+const primaryColor = "#FF6B35"; 
+const secondaryColor = "#004E89"; 
+const accentColor = "#38B2AC"; 
+const textPrimary = "#333333";
+const textSecondary = "#6C6F93";
+const gradientPrimary = `linear-gradient(90deg, ${primaryColor} 0%, ${primaryColor}DD 100%)`;
 
 const Dashboard = () => {
   const [form] = Form.useForm();
@@ -34,6 +50,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [pdfData, setPdfData] = useState(null);
   const [previewVisible, setPreviewVisible] = useState(false);
+  const [recentReports, setRecentReports] = useState([]);
 
   const axiosClient = useAxios();
   const { data: codeBankData, loading: codeBankLoading } = useGetCodeBank();
@@ -43,24 +60,44 @@ const Dashboard = () => {
       value: "NERACA",
       label: "NERACA",
       description: "Laporan Neraca Keuangan",
+      icon: <FileSearchOutlined />,
+      color: "#2563EB",
     },
-    { value: "LABARUGI", label: "LABARUGI", description: "Laporan Laba Rugi" },
+    {
+      value: "LABARUGI",
+      label: "LABARUGI",
+      description: "Laporan Laba Rugi",
+      icon: <FileSearchOutlined />,
+      color: "#10B981",
+    },
     {
       value: "OSTABUNGAN",
       label: "OSTABUNGAN",
       description: "Outstanding Tabungan",
+      icon: <FileSearchOutlined />,
+      color: "#8B5CF6",
     },
     {
       value: "OSDEPOSITO",
       label: "OSDEPOSITO",
       description: "Outstanding Deposito",
+      icon: <FileSearchOutlined />,
+      color: "#EC4899",
     },
     {
       value: "OSPINJAMAN",
       label: "OSPINJAMAN",
       description: "Outstanding Pinjaman",
+      icon: <FileSearchOutlined />,
+      color: "#F59E0B",
     },
-    { value: "TMW", label: "TMW", description: "Laporan Treasury Money Watch" },
+    {
+      value: "TMW",
+      label: "TMW",
+      description: "Laporan Treasury Money Watch",
+      icon: <FileSearchOutlined />,
+      color: "#6366F1",
+    },
   ];
 
   const generatePDF = async (values) => {
@@ -114,15 +151,43 @@ const Dashboard = () => {
         filename: filename,
       });
 
+      const selectedBank = codeBankData?.data?.find(
+        (bank) => bank.kodeBank === values.codeBank
+      );
+      const newReport = {
+        id: Date.now(),
+        reportType: values.reportType,
+        date: formattedDate,
+        codeBank: values.codeBank,
+        bankName: selectedBank?.nmSingkat || "Unknown Bank",
+        status: "success",
+        timestamp: new Date().toISOString(),
+      };
+
+      setRecentReports((prev) => [newReport, ...prev].slice(0, 5));
       setPreviewVisible(true);
       messageApi.success("PDF berhasil digenerate!");
     } catch (error) {
       const errorStatus = error.response?.status;
       const errorMessage =
         errorStatus === 404
-          ? "Data tidak ditemukan untuk kriteria yang dipilih"
+          ? "Data tidak ditemukan"
           : "Gagal generate PDF. Silakan coba lagi.";
 
+      const selectedBank = codeBankData?.data?.find(
+        (bank) => bank.kodeBank === values.codeBank
+      );
+      const newReport = {
+        id: Date.now(),
+        reportType: values.reportType,
+        date: values.date.format("DD-MM-YYYY"),
+        codeBank: values.codeBank,
+        bankName: selectedBank?.nmSingkat || "Unknown Bank",
+        status: "failed",
+        timestamp: new Date().toISOString(),
+      };
+
+      setRecentReports((prev) => [newReport, ...prev].slice(0, 5));
       messageApi.error(errorMessage);
       console.error("PDF generation error:", error);
     } finally {
@@ -145,9 +210,10 @@ const Dashboard = () => {
 
   const handleReset = () => {
     form.resetFields();
+    setReportType(null);
     setDate(null);
     setCodeBank(null);
-    setReportType(null);
+    messageApi.info("Form telah direset");
   };
 
   useEffect(() => {
@@ -159,160 +225,362 @@ const Dashboard = () => {
   }, [pdfData]);
 
   const findReportDescription = (value) => {
+    if (!value) return "";
     const report = reportTypes.find((type) => type.value === value);
     return report?.description || "";
+  };
+
+  const findReportColor = (value) => {
+    if (!value) return primaryColor;
+    const report = reportTypes.find((type) => type.value === value);
+    return report?.color || primaryColor;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   return (
     <>
       {contextHolder}
-      <div className="">
-        <div className="flex items-center mb-6">
-          <FileSearchOutlined className="text-2xl mr-3 text-blue-600" />
-          <Title level={2} className="m-0">
-            Dashboard Laporan
-          </Title>
-        </div>
-
-        <Card
-          title={
-            <span className="text-lg font-medium">Generate PDF Report</span>
-          }
-          className="shadow-lg rounded-lg"
-          extra={
-            <Text type="secondary">
-              Generate dan unduh laporan dalam format PDF
-            </Text>
-          }
-        >
-          <Form
-            form={form}
-            layout="vertical"
-            className="mt-4"
-            onFinish={generatePDF}
-            initialValues={{
-              reportType: reportType,
-              date: date,
-              codeBank: codeBank,
-            }}
-          >
-            <Form.Item
-              label={
-                <span className="flex items-center">
-                  <FileSearchOutlined className="mr-2" />
-                  <span>Jenis Laporan</span>
-                </span>
-              }
-              name="reportType"
-              style={{ margin: '0px 0px 8px 0px' }}
-              rules={[
-                { required: true, message: "Silakan pilih jenis laporan" },
-              ]}
-            >
-              <Select
-                placeholder="Pilih Jenis Laporan"
-                onChange={(value) => setReportType(value)}
-                className="w-full"
-                showSearch
-                allowClear
-                optionFilterProp="value"
-                options={reportTypes.map((type) => ({
-                  value: type.value,
-                  label: (
-                    <div>
-                      <span className="font-medium">{type.label}</span>
-                    </div>
-                  ),
-                }))}
-              />
-            </Form.Item>
-
-            {reportType && (
-              <Alert
-                message={findReportDescription(reportType)}
-                type="info"
-                className="mb-4"
-                showIcon
-              />
-            )}
-
-            <Form.Item
-              label={
-                <span className="flex items-center">
-                  <CalendarOutlined className="mr-2" />
-                  <span>Tanggal</span>
-                </span>
-              }
-              name="date"
-              style={{ margin: '24px 0px 24px 0px' }}
-              rules={[{ required: true, message: "Silakan pilih tanggal" }]}
-            >
-              <DatePicker
-                className="w-full"
-                onChange={(value) => setDate(value)}
-                format="DD-MM-YYYY"
-                placeholder="Pilih Tanggal"
-                allowClear
-              />
-            </Form.Item>
-
-            <Form.Item
-              label={
-                <span className="flex items-center">
-                  <BankOutlined className="mr-2" />
-                  <span>Kode Bank</span>
-                </span>
-              }
-              name="codeBank"
-              rules={[{ required: true, message: "Silakan pilih kode bank" }]}
-            >
-              <Select
-                placeholder={
-                  codeBankLoading ? "Memuat data bank..." : "Pilih Kode Bank"
-                }
-                onChange={(value) => setCodeBank(value)}
-                className="w-full"
-                showSearch
-                loading={codeBankLoading}
-                optionFilterProp="children"
-                filterOption={(input, option) =>
-                  (option?.label?.toLowerCase() ?? "").includes(
-                    input.toLowerCase()
-                  )
-                }
-                options={codeBankData?.data?.map((bank) => ({
-                  value: bank.kodeBank,
-                  label: (
-                    <div className="flex justify-between">
-                      <span className="font-medium">{bank.nmSingkat}</span>
-                      <span className="text-gray-500">({bank.kodeBank})</span>
-                    </div>
-                  ),
-                }))}
-              />
-            </Form.Item>
-
-            <Divider />
-
-            <div className="flex justify-end space-x-3">
-              <Button onClick={handleReset}>Reset</Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                icon={<EyeOutlined />}
-                loading={loading}
+      <div>
+        <Row gutter={[24, 24]}>
+          <Col span={24}>
+            <div className="flex items-center mb-4">
+              <div
+                className="flex items-center justify-center w-12 h-12 mr-4 rounded-xl"
+                style={{ background: gradientPrimary }}
               >
-                Generate & Preview PDF
-              </Button>
+                <FileSearchOutlined
+                  style={{ fontSize: 24, color: "#FFFFFF" }}
+                />
+              </div>
+              <div>
+                <Title level={2} style={{ margin: 0, color: secondaryColor }}>
+                  SisGadai Pro
+                </Title>
+                <Text type="secondary">Dashboard Laporan Keuangan</Text>
+              </div>
             </div>
-          </Form>
-        </Card>
+          </Col>
+
+          <Col xs={24} lg={16}>
+            <Card
+              title={
+                <span className="flex items-center">
+                  <FileSearchOutlined
+                    style={{ color: primaryColor, marginRight: "8px" }}
+                  />
+                  <span className="text-lg font-medium">
+                    Generate Laporan PDF
+                  </span>
+                </span>
+              }
+              className="shadow-lg rounded-xl border-0"
+              style={{ overflow: "hidden" }}
+              styles={{
+                header: {
+                  background: "white",
+                  borderBottom: 0,
+                  paddingTop: "16px",
+                  paddingBottom: "16px",
+                },
+                body: { padding: "20px" },
+              }}
+            >
+              <Form
+                form={form}
+                layout="vertical"
+                onFinish={generatePDF}
+                initialValues={{
+                  reportType: reportType,
+                  date: date,
+                  codeBank: codeBank,
+                }}
+              >
+                <Form.Item
+                  label={
+                    <span
+                      className="flex items-center font-medium"
+                      style={{ color: textPrimary }}
+                    >
+                      <FileSearchOutlined
+                        style={{ marginRight: "8px", color: primaryColor }}
+                      />
+                      <span>Jenis Laporan</span>
+                    </span>
+                  }
+                  name="reportType"
+                  style={{ marginBottom: "12px" }}
+                  rules={[
+                    { required: true, message: "Silakan pilih jenis laporan" },
+                  ]}
+                >
+                  <Select
+                    placeholder="Pilih Jenis Laporan"
+                    onChange={(value) => setReportType(value)}
+                    className="w-full"
+                    showSearch
+                    allowClear
+                    optionFilterProp="value"
+                    style={{ borderRadius: "10px" }}
+                    dropdownStyle={{ borderRadius: "10px" }}
+                    options={reportTypes.map((type) => ({
+                      value: type.value,
+                      label: (
+                        <div className="flex items-center">
+                          <div
+                            className="w-2 h-2 mr-2 rounded-full"
+                            style={{ backgroundColor: type.color }}
+                          ></div>
+                          <span className="font-medium">{type.label}</span>
+                        </div>
+                      ),
+                    }))}
+                  />
+                </Form.Item>
+
+                {reportType && (
+                  <Alert
+                    message={findReportDescription(reportType)}
+                    type="info"
+                    className="mb-4 rounded-xl"
+                    showIcon
+                    icon={
+                      <InfoCircleOutlined
+                        style={{ color: findReportColor(reportType) }}
+                      />
+                    }
+                    style={{
+                      borderLeft: `4px solid ${findReportColor(reportType)}`,
+                      backgroundColor: `${findReportColor(reportType)}10`,
+                    }}
+                  />
+                )}
+
+                <Flex justify="space-between" gap={16}>
+                  <Form.Item
+                    label={
+                      <span
+                        className="flex items-center font-medium"
+                        style={{ color: textPrimary }}
+                      >
+                        <CalendarOutlined
+                          style={{ marginRight: "8px", color: primaryColor }}
+                        />
+                        <span>Tanggal</span>
+                      </span>
+                    }
+                    name="date"
+                    style={{ margin: "12px 0px 0px 0px", width:'100%' }}
+                    rules={[
+                      { required: true, message: "Silakan pilih tanggal" },
+                    ]}
+                  >
+                    <DatePicker
+                      className="w-full"
+                      onChange={(value) => setDate(value)}
+                      format="DD-MM-YYYY"
+                      placeholder="Pilih Tanggal"
+                      allowClear
+                      style={{
+                        borderRadius: "8px",
+                        padding: "8px 12px",
+                        height: "auto",
+                      }}
+                    />
+                  </Form.Item>
+                  <Form.Item
+                    label={
+                      <span
+                        className="flex items-center font-medium"
+                        style={{ color: textPrimary }}
+                      >
+                        <BankOutlined
+                          style={{ marginRight: "8px", color: primaryColor }}
+                        />
+                        <span>Kode Bank</span>
+                      </span>
+                    }
+                    name="codeBank"
+                    style={{ margin: "12px 0px 0px 0px", width:'100%' }}
+                    rules={[
+                      { required: true, message: "Silakan pilih kode bank" },
+                    ]}
+                  >
+                    <Select
+                      placeholder={
+                        codeBankLoading
+                          ? "Memuat data bank..."
+                          : "Pilih Kode Bank"
+                      }
+                      onChange={(value) => setCodeBank(value)}
+                      className="w-full"
+                      showSearch
+                      loading={codeBankLoading}
+                      optionFilterProp="children"
+                      style={{ borderRadius: "10px", height: '40px' }}
+                      filterOption={(input, option) =>
+                        (option?.label?.toLowerCase() ?? "").includes(
+                          input.toLowerCase()
+                        )
+                      }
+                      options={codeBankData?.data?.map((bank) => ({
+                        value: bank.kodeBank,
+                        label: (
+                          <div className="flex justify-between">
+                            <span className="font-medium">
+                              {bank.nmSingkat}
+                            </span>
+                            <span className="text-gray-500">
+                              ({bank.kodeBank})
+                            </span>
+                          </div>
+                        ),
+                      }))}
+                    />
+                  </Form.Item>
+                </Flex>
+
+                <Divider style={{ margin: "8px 0 24px 0" }} />
+
+                <div className="flex flex-wrap gap-3 justify-end">
+                  <Button
+                    onClick={handleReset}
+                    icon={<ReloadOutlined />}
+                    style={{
+                      borderRadius: "8px",
+                      borderColor: secondaryColor,
+                      color: secondaryColor,
+                    }}
+                  >
+                    Reset
+                  </Button>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    icon={<EyeOutlined />}
+                    loading={loading}
+                    style={{
+                      background: gradientPrimary,
+                      borderRadius: "8px",
+                      border: "none",
+                      boxShadow: `0 4px 14px 0 ${primaryColor}66`,
+                    }}
+                  >
+                    {loading ? "Memproses..." : "Generate & Preview PDF"}
+                  </Button>
+                </div>
+              </Form>
+            </Card>
+          </Col>
+
+          <Col xs={24} lg={8}>
+            <Card
+              title={
+                <span className="flex items-center">
+                  <CheckCircleOutlined
+                    style={{ color: accentColor, marginRight: "8px" }}
+                  />
+                  <span className="text-lg font-medium">Riwayat Laporan</span>
+                </span>
+              }
+              className="shadow-lg rounded-xl border-0 scroll-smooth"
+              style={{ overflow: "auto", maxHeight: '362px'}}
+              styles={{
+                header: {
+                  background: "white",
+                  borderBottom: 0,
+                  paddingTop: "16px",
+                  paddingBottom: "16px",
+                },
+                body: { padding: "8px 20px" },
+              }}
+            >
+              {recentReports.length > 0 ? (
+                <div className="flex flex-col gap-3">
+                  {recentReports.map((report) => (
+                    <div
+                      key={report.id}
+                      className="p-3 rounded-xl transition-all hover:bg-gray-50"
+                      style={{
+                        borderLeft: `3px solid ${
+                          report.status === "success" ? accentColor : "#f87171"
+                        }`,
+                      }}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="flex items-center">
+                            <Badge
+                              status={
+                                report.status === "success"
+                                  ? "success"
+                                  : "error"
+                              }
+                              text={
+                                <span className="font-medium">
+                                  {report.reportType}
+                                </span>
+                              }
+                            />
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {report.bankName} ({report.codeBank}) •{" "}
+                            {report.date}
+                          </div>
+                        </div>
+                        <Tooltip
+                          title={
+                            report.status === "success"
+                              ? "Berhasil dibuat"
+                              : "Gagal dibuat"
+                          }
+                        >
+                          {report.status === "success" ? (
+                            <CheckCircleOutlined
+                              style={{ color: "#10B981", fontSize: "16px" }}
+                            />
+                          ) : (
+                            <ExclamationCircleOutlined
+                              style={{ color: "#f87171", fontSize: "16px" }}
+                            />
+                          )}
+                        </Tooltip>
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1">
+                        {formatDate(report.timestamp)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-8 text-center">
+                  <Text type="secondary">Belum ada riwayat laporan</Text>
+                </div>
+              )}
+            </Card>
+          </Col>
+        </Row>
       </div>
 
       <Modal
         title={
           <div className="flex items-center">
-            <FileSearchOutlined className="mr-2" />
+            <div
+              className="flex items-center justify-center w-8 h-8 mr-3 rounded-lg"
+              style={{ background: gradientPrimary }}
+            >
+              <FileSearchOutlined className="text-white" />
+            </div>
             <span>Preview PDF</span>
           </div>
         }
@@ -320,8 +588,16 @@ const Dashboard = () => {
         onCancel={() => setPreviewVisible(false)}
         width="80%"
         className="pdf-preview-modal"
+        style={{ top: 20 }}
+        styles={{
+          body: { padding: "16px" },
+        }}
         footer={[
-          <Button key="close" onClick={() => setPreviewVisible(false)}>
+          <Button
+            key="close"
+            onClick={() => setPreviewVisible(false)}
+            style={{ borderRadius: "8px" }}
+          >
             Tutup
           </Button>,
           <Button
@@ -329,12 +605,17 @@ const Dashboard = () => {
             type="primary"
             icon={<DownloadOutlined />}
             onClick={downloadPDF}
+            style={{
+              background: gradientPrimary,
+              borderRadius: "8px",
+              border: "none",
+            }}
           >
             Download PDF
           </Button>,
         ]}
       >
-        <div className="h-[70vh] bg-gray-100 rounded-md">
+        <div className="h-[75vh] bg-gray-100 rounded-xl">
           {pdfData ? (
             <iframe
               src={pdfData.url}
@@ -342,7 +623,7 @@ const Dashboard = () => {
               width="100%"
               height="100%"
               style={{ border: "none" }}
-              className="rounded"
+              className="rounded-xl"
             />
           ) : (
             <div className="flex justify-center items-center h-full">

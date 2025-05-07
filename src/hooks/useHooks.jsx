@@ -1,8 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 const useAxios = () => {
   const BASE_URL = '/api'
-
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
   const axiosClient = axios.create({
@@ -11,6 +13,29 @@ const useAxios = () => {
       Authorization: token ? `Bearer ${token}` : "",
     },
   });
+
+  
+  axiosClient.interceptors.request.use((config) => {
+    const token = localStorage.getItem("token"); 
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    if (config.data instanceof FormData) {
+      config.headers["Content-Type"] = "multipart/form-data";
+    }
+    return config;
+  });
+
+  axiosClient.interceptors.response.use(
+    (response) => response, 
+    (error) => {
+      if (error.response?.status === 401) {
+        queryClient.clear();
+        navigate("/");
+      }
+      return Promise.reject(error);
+    }
+  );
 
   const _get = (url, config = {}) => {
     return axiosClient.get(url, config);

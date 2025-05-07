@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import Aside from '../components/shared/Aside'
+import Aside from "../components/shared/Aside";
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -17,6 +17,7 @@ import CreateCif from "../pages/CreateCif";
 import Sidebar from "../components/shared/Aside";
 import Tabungan from "../pages/Tabungan";
 import Pinjaman from "../pages/Pinjaman";
+import ProtectedRoutes from "./ProtectedRoutes";
 
 const LayoutPage = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -26,7 +27,7 @@ const LayoutPage = () => {
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <Sider trigger={null} collapsible collapsed={collapsed} width={280}>
-        <Sidebar collapse={collapsed}/>
+        <Sidebar collapse={collapsed} />
       </Sider>
       <Layout>
         <Header style={{ padding: 0, background: colorBgContainer }}>
@@ -51,7 +52,7 @@ const LayoutPage = () => {
 
 const routes = [
   {
-    path: "/login",
+    path: "/",
     element: <LoginPage />,
   },
   {
@@ -59,10 +60,14 @@ const routes = [
     children: [
       {
         path: "/",
-        element: <LayoutPage />,
+        element: (
+          <ProtectedRoutes>
+            <LayoutPage />
+          </ProtectedRoutes>
+        ),
         children: [
           {
-            path: "/",
+            path: "/dashboard",
             children: [{ index: true, element: <Dashboard /> }],
           },
           {
