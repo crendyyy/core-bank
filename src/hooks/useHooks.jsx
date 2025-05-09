@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 const useAxios = () => {
-  const BASE_URL = '/api'
+  const BASE_URL = "/api";
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
@@ -14,9 +14,8 @@ const useAxios = () => {
     },
   });
 
-  
   axiosClient.interceptors.request.use((config) => {
-    const token = localStorage.getItem("token"); 
+    const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -27,10 +26,14 @@ const useAxios = () => {
   });
 
   axiosClient.interceptors.response.use(
-    (response) => response, 
+    (response) => response,
     (error) => {
       if (error.response?.status === 401) {
         queryClient.clear();
+        localStorage.removeItem("token");
+        localStorage.removeItem("nama");
+        localStorage.removeItem("kdposisi");
+        localStorage.removeItem("limit");
         navigate("/");
       }
       return Promise.reject(error);

@@ -1,5 +1,5 @@
 import { Form, Input, Layout, Select, Typography, message } from "antd";
-import {
+import Icon, {
   LockOutlined,
   UserOutlined,
   BankOutlined,
@@ -9,15 +9,20 @@ import { useState, useEffect } from "react";
 import { useGetCodeBank } from "../service/codeBank/useGetCodeBank";
 import { useLogin } from "../service/userServices/userService";
 import { useNavigate } from "react-router-dom";
+import sisGadaiLogo from "/sisgadaiLogo.ico";
+import { UserProvider, useUserContext } from "../components/context/userContext";
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
 
-const primaryColor = "#FF6B35";
-const secondaryColor = "#004E89";
 const bgLight = "#F9F7F7";
+const primaryColor = "#2283F8";
+const secondaryColor = "#0C4A8C";
+const accentColor = "#4DABF5";
 const textPrimary = "#333333";
-const textSecondary = "#6C6F93";
+const textSecondary = "#6B7AAA";
+
+const gradientPrimary = `linear-gradient(90deg, ${primaryColor} 0%, ${primaryColor}DD 100%)`;
 
 const LoginPage = () => {
   const [form] = Form.useForm();
@@ -29,6 +34,8 @@ const LoginPage = () => {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const loginMutation = useLogin();
   const navigate = useNavigate();
+
+  const { setUser } = useUserContext();
 
   const { data: codeBankData, loading: codeBankLoading } = useGetCodeBank();
 
@@ -45,10 +52,11 @@ const LoginPage = () => {
     loginMutation.mutate(loginValues, {
       onSuccess: (data) => {
         if (data && data.data) {
-          const { token, user } = data.data;
+          const { token, nama, kdposisi, limit } = data.data;
           if (token) {
             localStorage.setItem("token", token);
-            navigate("/dashboard");
+            setUser({ nama, kdposisi, limit });
+            navigate("/laporan");
             message.success({ content: "Login successful.", key });
             setFormSubmitted(true);
           } else {
@@ -78,7 +86,6 @@ const LoginPage = () => {
       kodeBank: null,
     });
     setFormSubmitted(false);
-    localStorage.removeItem("sisGadaiUser");
     message.info("Form telah direset");
   };
 
@@ -93,13 +100,8 @@ const LoginPage = () => {
           style={{ background: "#FFFFFF" }}
         >
           <div className="flex flex-col items-center mb-2 text-center">
-            <div
-              className="flex items-center justify-center mb-4 rounded-full w-20 h-20"
-              style={{ background: primaryColor }}
-            >
-              <PropertySafetyOutlined
-                style={{ fontSize: 32, color: "#FFFFFF" }}
-              />
+            <div className="flex items-center justify-center mb-4 rounded-full w-20 h-20 ">
+              <img src={sisGadaiLogo} alt="SisGadai Logo" />
             </div>
             <Title
               level={2}
@@ -181,7 +183,7 @@ const LoginPage = () => {
                   <span style={{ color: textPrimary }}>Kode Bank</span>
                   <span className="text-gray-400">(Optional)</span>
                 </div>
-            }
+              }
               name="kodeBank"
             >
               <Select
@@ -255,17 +257,7 @@ const LoginPage = () => {
             )}
           </Form>
 
-          <div className="flex justify-between items-center mt-2">
-            <Text style={{ color: textSecondary }}>
-              Belum punya akun?{" "}
-              <span
-                className="cursor-pointer"
-                style={{ color: primaryColor, fontWeight: 600 }}
-              >
-                Hubungi Admin
-              </span>
-            </Text>
-
+          <div className="flex justify-end items-center mt-2">
             <button
               onClick={handleReset}
               type="button"

@@ -30,15 +30,18 @@ import {
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   InfoCircleOutlined,
+  RedoOutlined,
 } from "@ant-design/icons";
+import dayjs from "dayjs"; // Import dayjs untuk bekerja dengan DatePicker
 
 const { Title, Text } = Typography;
 
-const primaryColor = "#FF6B35"; 
-const secondaryColor = "#004E89"; 
-const accentColor = "#38B2AC"; 
-const textPrimary = "#333333";
-const textSecondary = "#6C6F93";
+const primaryColor = "#2283F8"; 
+const secondaryColor = "#0C4A8C"; 
+const accentColor = "#4DABF5"; 
+const textPrimary = "#333333"; 
+const textSecondary = "#6B7AAA";
+
 const gradientPrimary = `linear-gradient(90deg, ${primaryColor} 0%, ${primaryColor}DD 100%)`;
 
 const Dashboard = () => {
@@ -99,6 +102,18 @@ const Dashboard = () => {
       color: "#6366F1",
     },
   ];
+
+  const parseDateString = (dateString) => {
+    if (!dateString) return null;
+    const parts = dateString.split('-');
+    if (parts.length === 3) {
+      const day = parts[0];
+      const month = parts[1];
+      const year = parts[2];
+      return dayjs(`${year}-${month}-${day}`);
+    }
+    return null;
+  };
 
   const generatePDF = async (values) => {
     if (!values.reportType || !values.date || !values.codeBank) {
@@ -193,6 +208,31 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleReportClick = async (report) => {
+    if (report.status !== "success") {
+      messageApi.warning("Tidak dapat membuka kembali laporan yang gagal dibuat");
+      return;
+    }
+
+    const dateValue = parseDateString(report.date);
+    
+    form.setFieldsValue({
+      reportType: report.reportType,
+      date: dateValue,
+      codeBank: report.codeBank,
+    });
+    
+    setReportType(report.reportType);
+    setDate(dateValue);
+    setCodeBank(report.codeBank);
+    
+    await generatePDF({
+      reportType: report.reportType,
+      date: dateValue,
+      codeBank: report.codeBank,
+    });
   };
 
   const downloadPDF = () => {
@@ -309,8 +349,7 @@ const Dashboard = () => {
                 <Form.Item
                   label={
                     <span
-                      className="flex items-center font-medium"
-                      style={{ color: textPrimary }}
+                      className="flex items-center font-medium text-textPrimary"
                     >
                       <FileSearchOutlined
                         style={{ marginRight: "8px", color: primaryColor }}
@@ -494,7 +533,7 @@ const Dashboard = () => {
                 </span>
               }
               className="shadow-lg rounded-xl border-0 scroll-smooth"
-              style={{ overflow: "auto", maxHeight: '362px'}}
+              style={{ overflow: "auto", maxHeight: '362px',  scrollbarWidth: "thin"}}
               styles={{
                 header: {
                   background: "white",
@@ -506,7 +545,7 @@ const Dashboard = () => {
               }}
             >
               {recentReports.length > 0 ? (
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-3" >
                   {recentReports.map((report) => (
                     <div
                       key={report.id}
@@ -515,7 +554,9 @@ const Dashboard = () => {
                         borderLeft: `3px solid ${
                           report.status === "success" ? accentColor : "#f87171"
                         }`,
+                        cursor: report.status === "success" ? "pointer" : "default",
                       }}
+                      onClick={() => report.status === "success" && handleReportClick(report)}
                     >
                       <div className="flex justify-between items-start">
                         <div>
@@ -541,12 +582,12 @@ const Dashboard = () => {
                         <Tooltip
                           title={
                             report.status === "success"
-                              ? "Berhasil dibuat"
+                              ? "Klik untuk generate ulang laporan ini"
                               : "Gagal dibuat"
                           }
                         >
                           {report.status === "success" ? (
-                            <CheckCircleOutlined
+                            <RedoOutlined
                               style={{ color: "#10B981", fontSize: "16px" }}
                             />
                           ) : (
@@ -579,7 +620,7 @@ const Dashboard = () => {
               className="flex items-center justify-center w-8 h-8 mr-3 rounded-lg"
               style={{ background: gradientPrimary }}
             >
-              <FileSearchOutlined className="text-white" />
+              <FileSearchOutlined style={{ color: 'white' }}/>
             </div>
             <span>Preview PDF</span>
           </div>

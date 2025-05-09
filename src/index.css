@@ -1,1 +1,44 @@
 @import "tailwindcss";
+
+@theme {
+    --font-family: "Inter", "sans-serif";
+    --color-primary:  #2283F8 ;
+    --color-secondary:  #0C4A8C; 
+    --color-accent:  #4DABF5 ;
+    --color-textPrimary: #333333 ;
+    --color-textSecondary:  #6B7AAA ;
+  }
+  
+@layer components {
+  .ant-menu-custom {
+    @apply border-r-0;
+  }
+
+  .ant-menu-custom .ant-menu-item {
+    @apply my-2.5 rounded-none;
+  }
+
+  .ant-menu-custom .ant-menu-item:not(.ant-menu-item-selected) {
+    @apply hover:text-[#2283F8];
+  }
+
+  .ant-menu-custom .ant-menu-item-selected {
+    @apply text-white;
+  }
+
+  .ant-menu-custom .ant-menu-item-selected::before {
+    @apply content-[''] absolute left-0 top-0 bottom-0 w-1 bg-[#2283F8];
+  }
+
+  .ant-menu-custom .ant-menu-item-icon {
+    @apply text-lg;
+  }
+
+  .ant-menu-custom .ant-menu-submenu-title {
+    @apply font-medium;
+  }
+
+  .ant-menu-custom .ant-menu-item-group-title {
+    @apply text-[#6C6F93] text-xs tracking-wider uppercase py-6 px-4;
+  }
+}

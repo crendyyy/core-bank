@@ -13,7 +13,7 @@ const ProtectedRoutes = ({ roles, children }) => {
   }, [token, navigate]);
 
   if (!token) {
-    return null; // atau loading spinner
+    return null; 
   }
 
   return children;
