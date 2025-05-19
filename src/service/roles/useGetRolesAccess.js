@@ -1,15 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import useAxios from "../../hooks/useHooks";
-import userKeys from ".";
+import rolesKeys from ".";
 
-export const useGetJabatan = (kdPos) => {
+export const useGetRolesAccess = (roleId) => {
   const axiosClient = useAxios();
 
-  const cacheKey = userKeys.detailJabatan(kdPos);
+  const cacheKey = rolesKeys.detailRoleAccess(roleId);
 
   const query = useQuery({
     queryKey: cacheKey,
-    queryFn: () => axiosClient._get(`/api/v1/jabatan/${kdPos}`),
+    queryFn: () => axiosClient._get(`/api/v1/Roles/${roleId}/access`),
+    enabled: !!roleId,
   });
 
   return { ...query, data: query.data?.data };

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { lazy, Suspense, useState } from "react";
+import { Outlet, useLocation, useRoutes } from "react-router-dom";
 import Aside from "../components/shared/Aside";
 import {
   MenuFoldOutlined,
@@ -16,33 +16,29 @@ import {
   Layout,
   Menu,
   Space,
+  Spin,
   theme,
   Tooltip,
   Typography,
 } from "antd";
 import LoginPage from "../pages/LoginPage";
-import Laporan from "../pages/Laporan";
 import Sider from "antd/es/layout/Sider";
 import { Header } from "antd/es/layout/layout";
-import CreateCif from "../pages/CreateCif";
-import InformasiDeposito from "../pages/InformasiDeposito";
-import ViewJurnal from "../pages/ViewJurnal";
-import Konfigurasi from "../pages/Konfigurasi";
 import Sidebar from "../components/shared/Aside";
-import Tabungan from "../pages/Tabungan";
-import Pinjaman from "../pages/Pinjaman";
 import ProtectedRoutes from "./ProtectedRoutes";
-import { useGetJabatan } from "../service/userServices/useGetJabatan";
-import { UserProvider, useUserContext } from "../components/context/userContext";
+import {
+  UserProvider,
+  useUserContext,
+} from "../components/context/userContext";
+import { useGetUserNavigation } from "../service/menus/useGetMenus";
+import { useNavigation } from "../components/context/NavigationContext";
+import NotFound from "../pages/NotFoundPages";
 
 const LayoutPage = () => {
   const [collapsed, setCollapsed] = useState(false);
 
   const { user } = useUserContext();
-
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
+  const { setNavigation } = useNavigation();
 
   const { Text } = Typography;
 
@@ -55,15 +51,15 @@ const LayoutPage = () => {
   };
 
   return (
-    <Layout style={{ minHeight: "100vh" }}>
-      <Sider trigger={null} collapsible collapsed={collapsed} width={280}>
+    <Layout style={{ minHeight: "100vh", }}>
+      <Sider trigger={null} collapsible collapsed={collapsed} width={280} className="!bg-white">
         <Sidebar collapse={collapsed} />
       </Sider>
       <Layout>
         <Header
           style={{
             padding: "0px 16px 0 16px",
-            background: colorBgContainer,
+            background: "white",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -85,28 +81,15 @@ const LayoutPage = () => {
               )
             }
           />
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              marginLeft: "auto",
-              marginRight: "24px",
-            }}
-          >
+          <div className="flex items-center ml-auto mr-6">
             <Space size={12} align="center">
-              {!user?.limit && (
+               {user?.limit !== undefined && (
                 <Tooltip title="Limit User">
-                  <div
-                    style={{
-                      padding: "0px 10px",
-                      backgroundColor: "rgba(34, 131, 248, 0.1)",
-                      border: `1px solid #2283F8 20`,
-                      height: "40px ",
-                      borderRadius: "20px",
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  >
+                  <div className="py-0 px-2.5 bg-blue-100 border border-solid border-primary h-10 rounded-3xl flex items-center gap-2">
+                    <span className="text-primary text-xs font-medium whitespace-nowrap">
+                      Limit User
+                    </span>
+                    <div className="h-4 w-px bg-blue-300"></div>
                     <Text
                       style={{
                         fontSize: "13px",
@@ -122,16 +105,7 @@ const LayoutPage = () => {
 
               {user?.kdposisi && (
                 <Tooltip title="Jabatan">
-                  <div
-                    style={{
-                      padding: "4px 10px",
-                      backgroundColor: "#f5f5f5",
-                      borderRadius: "20px",
-                      height: "40px ",
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  >
+                  <div className="py-1 px-2.5 bg-[#f5f5f5] rounded-[20px] h-10 flex items-center">
                     <Text
                       style={{
                         fontSize: "13px",
@@ -177,62 +151,62 @@ const LayoutPage = () => {
             </Space>
           </div>
         </Header>
-        <main className="p-10 bg-white m-6 rounded-lg">
+        <main className="m-6">
           <Outlet />
         </main>
       </Layout>
     </Layout>
   );
 };
+const toComponentName = (menuName) => menuName.replace(/\s/g, "");
 
-const routes = [
-  {
-    path: "/",
-    element: <LoginPage />,
-  },
-  {
-    element: <Outlet />,
-    children: [
-      {
-        path: "/",
-        element: (
-          <ProtectedRoutes>
-            <LayoutPage />
-          </ProtectedRoutes>
-        ),
-        children: [
-          {
-            path: "/laporan",
-            children: [{ index: true, element: <Laporan /> }],
-          },
-          {
-            path: "/informasi-tabungan",
-            children: [{ index: true, element: <Tabungan /> }],
-          },
-          {
-            path: "/informasi-pinjaman",
-            children: [{ index: true, element: <Pinjaman /> }],
-          },
-          {
-            path: "/create-cif",
-            children: [{ index: true, element: <CreateCif /> }],
-          },
-          {
-            path: "/informasi-deposito",
-            children: [{ index: true, element: <InformasiDeposito /> }],
-          },
-          {
-            path: "/view-jurnal",
-            children: [{ index: true, element: <ViewJurnal /> }],
-          },
-          {
-            path: "/konfigurasi",
-            children: [{ index: true, element: <Konfigurasi /> }],
-          },
-        ],
-      },
-    ],
-  },
-];
+const DynamicRoutes = () => {
+  const { navigation } = useNavigation();
 
-export default routes;
+  const dynamicChildren = navigation.flatMap((group) =>
+    group.menus.map((menu) => {
+      const Component = lazy(() =>
+        import(`../pages/${toComponentName(menu.menuName)}.jsx`)
+      );
+      const LazyWrapper = ({ Component }) => (
+        <Suspense fallback={<Spin/>}>
+          <Component />
+        </Suspense>
+      );
+
+      return {
+        path: menu.route,
+        element: <LazyWrapper key={menu.route} Component={Component} />,
+      };
+    })
+  );
+
+  const routes = [
+    {
+      path: "/",
+      element: <LoginPage />,
+    },
+    {
+      element: <Outlet />,
+      children: [
+        {
+          path: "/",
+          element: (
+            <ProtectedRoutes>
+              <LayoutPage />
+            </ProtectedRoutes>
+          ),
+          children: dynamicChildren,
+        },
+      ],
+    },
+    //  {
+    //   path: "*",
+    //   element: <NotFound />,
+    // },
+  ];
+
+  return useRoutes(routes);
+};
+
+export default DynamicRoutes;

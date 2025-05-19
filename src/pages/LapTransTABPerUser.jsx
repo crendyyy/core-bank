@@ -33,6 +33,8 @@ import {
   RedoOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs"; // Import dayjs untuk bekerja dengan DatePicker
+import { useLocation } from "react-router-dom";
+import { useGetUserPermissions } from "../service/menus/useGetMenus";
 
 const { Title, Text } = Typography;
 
@@ -44,7 +46,7 @@ const textSecondary = "#6B7AAA";
 
 const gradientPrimary = `linear-gradient(90deg, ${primaryColor} 0%, ${primaryColor}DD 100%)`;
 
-const Dashboard = () => {
+const LapTransTABPerUser = () => {
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
   const [reportType, setReportType] = useState(null);
@@ -102,6 +104,14 @@ const Dashboard = () => {
       color: "#6366F1",
     },
   ];
+
+      
+    const location = useLocation();
+    console.log(location.pathname);
+    
+    const { data: dataMenus } = useGetUserPermissions(location.pathname);
+    
+    console.log(dataMenus?.data);
 
   const parseDateString = (dateString) => {
     if (!dateString) return null;
@@ -291,7 +301,7 @@ const Dashboard = () => {
   return (
     <>
       {contextHolder}
-      <div>
+      <div className="bg-white p-6 rounded-lg">
         <Row gutter={[24, 24]}>
           <Col span={24}>
             <div className="flex items-center mb-4">
@@ -307,7 +317,7 @@ const Dashboard = () => {
                 <Title level={2} style={{ margin: 0, color: secondaryColor }}>
                   SisGadai Pro
                 </Title>
-                <Text type="secondary">Dashboard Laporan Keuangan</Text>
+                <Text type="secondary">Laporan Keuangan</Text>
               </div>
             </div>
           </Col>
@@ -680,4 +690,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default LapTransTABPerUser;

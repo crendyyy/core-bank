@@ -3,8 +3,11 @@ import { Flex, Menu, Tooltip, Typography } from "antd";
 import * as Icons from "@ant-design/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import sisGadaiLogo from "/sisgadaiLogo.ico";
-import { menuConfig } from "../utils/MenuConfig";
+import { mapMenusToMenuConfig } from "../utils/MenuConfig";
 import { useUserContext } from "../context/userContext";
+import { useGetUserMenusByModule } from "../../service/menus/useGetMenus";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigation } from "../context/NavigationContext";
 
 const primaryColor = "#2283F8";
 const secondaryColor = "#0C4A8C";
@@ -18,11 +21,27 @@ const gradientStyle = {
 const { Text } = Typography;
 
 const Sidebar = ({ collapse }) => {
+  const [openKeys, setOpenKeys] = useState([]);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
   const { setUser } = useUserContext();
+
+  const { data: dataMenus } = useGetUserMenusByModule();
+
+  const dynamicMenuConfig = useMemo(
+    () => mapMenusToMenuConfig(dataMenus?.data),
+    [dataMenus]
+  );
+
+  useEffect(() => {
+    if (!collapse) {
+      setOpenKeys(getAllGroupKeys(dynamicMenuConfig));
+    } else {
+      setOpenKeys([]);
+    }
+  }, [dynamicMenuConfig, collapse]);
 
   const isPathActive = (pathPatterns) => {
     if (!pathPatterns) return false;
@@ -33,7 +52,7 @@ const Sidebar = ({ collapse }) => {
     const IconComponent = Icons[iconName];
     return IconComponent ? (
       <IconComponent
-        style={{ color: color || (isActive ? primaryColor : textPrimary) }}
+        className={`text-[${isActive ? primaryColor : textPrimary}]`}
       />
     ) : null;
   };
@@ -95,11 +114,11 @@ const Sidebar = ({ collapse }) => {
     }, []);
   };
 
-  const defaultOpenKeys = collapse ? [] : getAllGroupKeys(menuConfig);
+  const defaultOpenKeys = collapse ? [] : getAllGroupKeys(dynamicMenuConfig);
 
   return (
     <div
-      className={`h-screen bg-white flex flex-col relative z-10 ${
+      className={`h-full bg-white flex flex-col relative z-10 ${
         collapse ? "w-20" : "w-full"
       }`}
     >
@@ -113,30 +132,31 @@ const Sidebar = ({ collapse }) => {
         ) : (
           <Flex gap={6} align="center">
             <img src={sisGadaiLogo} alt="SisGadai Logo" className="h-8 w-8" />
-          <Text
-            strong
-            style={{
-              fontSize: "24px",
-              fontWeight: "600",
-              background: `linear-gradient(90deg, #2283F8 30%, #0C4A8C 100%)`,
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
+            <Text
+              strong
+              style={{
+                fontSize: "24px",
+                fontWeight: "600",
+                background: `linear-gradient(90deg, #2283F8 30%, #0C4A8C 100%)`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
             >
-            SisGadai Pro
-          </Text>
-        </Flex>
+              SisGadai Pro
+            </Text>
+          </Flex>
         )}
       </div>
 
       <Menu
-        className={menuClassName}
+        className="ant-menu-custom border-none bg-white"
         mode="inline"
         theme="light"
         defaultSelectedKeys={[currentPath]}
-        defaultOpenKeys={defaultOpenKeys}
+        // openKeys={openKeys}
+        // onOpenChange={setOpenKeys}
         inlineCollapsed={collapse}
-        items={buildMenuItems(menuConfig)}
+        items={buildMenuItems(dynamicMenuConfig)}
       />
 
       <Tooltip title={collapse ? "Sign out" : ""} placement="right">

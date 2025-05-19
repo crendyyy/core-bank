@@ -9,7 +9,7 @@ export const useGetCodeBank = () => {
 
   const query = useQuery({
     queryKey: cacheKey,
-    queryFn: () => axiosClient._get(`/Login/GetKantor`),
+    queryFn: () => axiosClient._get(`/api/v1/Login/GetKantor`),
   });
 
   return { ...query, data: query.data?.data };

@@ -1,111 +1,63 @@
-export const menuConfig = [
+import { FileOutlined } from "@ant-design/icons";
+
+export function mapMenusToMenuConfig(dataMenus) {
+  if (!dataMenus) return [];
+
+  const iconMap = {
+    CIF: "UserOutlined",
+    Tabungan: "WalletOutlined",
+    Deposito: "BankOutlined",
+    Pinjaman: "CreditCardOutlined",
+    "General Ledger": "BookOutlined",
+    "Laporan Transaksi": "FileTextOutlined",
+    Laporan: "BarChartOutlined",
+    "Hak Akses Menu": "SettingOutlined",
+  };
+
+  const menuChildren = [];
+  const konfigurasiChildren = [];
+
+  dataMenus.forEach((group) => {
+    const iconName = iconMap[group.groupName] || "FileOutlined";
+    const pathMatch = group.menus.map((menu) => menu.route);
+
+    const transformedGroup = {
+      key: group.groupName.toLowerCase().replace(/\s+/g, "-"),
+      label: group.groupName.toUpperCase(),
+      icon: iconName,
+      activeIcon: iconName,
+      pathMatch,
+      children: group.menus.map((menu) => ({
+        key: menu.route,
+        label: menu.menuName,
+        path: menu.route,
+        ...menu, // menyimpan detail permissions dan lainnya
+      })),
+    };
+
+    if (group.groupName === "Hak Akses Menu") {
+      konfigurasiChildren.push(transformedGroup);
+    } else {
+      menuChildren.push(transformedGroup);
+    }
+  });
+
+  return [
     {
       type: "group",
       key: "Menu",
       label: "Menu",
-      children: [
-        {
-          key: "cif",
-          label: "CIF",
-          icon: "UserOutlined",
-          activeIcon: "UserOutlined",
-          pathMatch: ["/cif", "/create-cif"],
-          children: [
-            {
-              key: "/create-cif",
-              label: "Tambah CIF",
-              icon: "UserAddOutlined",
-              path: "/create-cif"
-            }
-          ]
-        },
-        {
-          key: "tabunganMenu",
-          label: "Tabungan",
-          icon: "BookOutlined",
-          activeIcon: "BookOutlined",
-          pathMatch: ["/tabunganMenu", "/informasi-tabungan"],
-          children: [
-            {
-              key: "/informasi-tabungan",
-              label: "Informasi Tabungan",
-              icon: "BankOutlined",
-              activeIcon: "BankFilled",
-              path: "/informasi-tabungan"
-            }
-          ]
-        },
-        {
-          key: "depositoMenu",
-          label: "Deposito",
-          icon: "GoldOutlined",
-          activeIcon: "GoldOutlined",
-          pathMatch: ["/depositoMenu", "/informasi-deposito"],
-          children: [
-            {
-              key: "/informasi-deposito",
-              label: "Informasi Deposito",
-              icon: "GoldOutlined",
-              activeIcon: "GoldFilled",
-              path: "/informasi-deposito"
-            }
-          ]
-        },
-        {
-          key: "pinjamanMenu",
-          label: "Pinjaman",
-          icon: "TransactionOutlined",
-          activeIcon: "TransactionOutlined",
-          pathMatch: ["/pinjamanMenu", "/informasi-pinjaman"],
-          children: [
-            {
-              key: "/informasi-pinjaman",
-              label: "Informasi Pinjaman",
-              icon: "PieChartOutlined",
-              activeIcon: "PieChartFilled",
-              path: "/informasi-pinjaman"
-            }
-          ]
-        },
-        {
-          key: "generalLedgerMenu",
-          label: "General Ledger",
-          icon: "FileTextOutlined",
-          activeIcon: "FileTextOutlined",
-          pathMatch: ["/generalLedgerMenu", "/view-jurnal"],
-          children: [
-            {
-              key: "/view-jurnal",
-              label: "View Jurnal",
-              icon: "FileTextOutlined",
-              activeIcon: "FileTextFilled",
-              path: "/view-jurnal"
-            }
-          ]
-        },
-        {
-          key: "/laporan",
-          label: "Laporan",
-          icon: "FileDoneOutlined",
-          activeIcon: "FileDoneOutlined",
-          pathMatch: ["/laporan"],
-          path: "/laporan"
-        }
-      ]
+      children: menuChildren,
     },
-    {
-      type: "group",
-      key: "konfigurasi",
-      label: "Konfigurasi",
-      children: [
-        {
-          key: "/konfigurasi",
-          label: "Konfigurasi",
-          icon: "SettingOutlined",
-          activeIcon: "SettingFilled",
-          pathMatch: ["/konfigurasi"],
-          path: "/konfigurasi"
-        }
-      ]
-    }
+    ...(konfigurasiChildren.length
+      ? [
+          {
+            type: "group",
+            key: "konfigurasi",
+            label: "Konfigurasi",
+            children: konfigurasiChildren,
+          },
+        ]
+      : []),
   ];
+}

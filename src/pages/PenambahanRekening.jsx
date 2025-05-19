@@ -1,7 +1,7 @@
 import Title from "antd/es/typography/Title";
 import { useState } from "react";
 
-const InformasiDeposito = () => {
+const PenambahanRekening = () => {
   const [count, setCount] = useState(0);
 
   return (
@@ -13,4 +13,4 @@ const InformasiDeposito = () => {
   );
 };
 
-export default InformasiDeposito;
+export default PenambahanRekening;

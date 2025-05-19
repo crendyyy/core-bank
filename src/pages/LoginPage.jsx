@@ -10,7 +10,13 @@ import { useGetCodeBank } from "../service/codeBank/useGetCodeBank";
 import { useLogin } from "../service/userServices/userService";
 import { useNavigate } from "react-router-dom";
 import sisGadaiLogo from "/sisgadaiLogo.ico";
-import { UserProvider, useUserContext } from "../components/context/userContext";
+import {
+  UserProvider,
+  useUserContext,
+} from "../components/context/userContext";
+import { useNavigation } from "../components/context/NavigationContext";
+import useAxios from "../hooks/useHooks";
+import { fetchUserNavigation } from "../service/menus/useGetMenus";
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
@@ -36,6 +42,8 @@ const LoginPage = () => {
   const navigate = useNavigate();
 
   const { setUser } = useUserContext();
+  const { setNavigation } = useNavigation();
+  const axiosClient = useAxios();
 
   const { data: codeBankData, loading: codeBankLoading } = useGetCodeBank();
 
@@ -50,28 +58,30 @@ const LoginPage = () => {
     message.loading({ content: "Login...", key });
 
     loginMutation.mutate(loginValues, {
-      onSuccess: (data) => {
-        if (data && data.data) {
+      onSuccess: async (data) => {
+        if (data?.data?.token) {
           const { token, nama, kdposisi, limit } = data.data;
-          if (token) {
-            localStorage.setItem("token", token);
-            setUser({ nama, kdposisi, limit });
-            navigate("/laporan");
-            message.success({ content: "Login successful.", key });
-            setFormSubmitted(true);
-          } else {
-            message.error({ content: "Invalid credentials", key });
+          localStorage.setItem("token", token);
+          setUser({ nama, kdposisi, limit });
+
+          try {
+            const nav = await fetchUserNavigation(axiosClient);
+            setNavigation(nav.data);
+          } catch (error) {
+            console.error("Failed to fetch navigation", error);
+            message.warning("Gagal ambil navigasi");
           }
+
+          navigate("/LapTransTABPerUser");
+          message.success({ content: "Login berhasil", key });
+          setFormSubmitted(true);
         } else {
-          message.error({
-            content: "Unexpected response format. Please try again.",
-            key,
-          });
+          message.error({ content: "Token tidak valid", key });
         }
       },
-      onError: (data) => {
+      onError: (error) => {
         message.error({
-          content: `${data.response?.data?.msg || data.message}`,
+          content: error.response?.data?.msg || error.message,
           key,
         });
       },

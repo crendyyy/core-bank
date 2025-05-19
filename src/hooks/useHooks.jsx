@@ -1,11 +1,16 @@
 import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useUserContext } from "../components/context/userContext";
+import { useNavigation } from "../components/context/NavigationContext";
 const useAxios = () => {
   const BASE_URL = "/api";
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
+
+  const { setUser } = useUserContext();
+  const { setNavigation } = useNavigation();
 
   const axiosClient = axios.create({
     baseURL: BASE_URL,
@@ -30,10 +35,9 @@ const useAxios = () => {
     (error) => {
       if (error.response?.status === 401) {
         queryClient.clear();
+        localStorage.removeItem("userData");
         localStorage.removeItem("token");
-        localStorage.removeItem("nama");
-        localStorage.removeItem("kdposisi");
-        localStorage.removeItem("limit");
+        setUser(null);
         navigate("/");
       }
       return Promise.reject(error);
