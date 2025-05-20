@@ -93,8 +93,7 @@ const Sidebar = ({ collapse }) => {
 
   const logout = () => {
     queryClient.clear();
-    localStorage.removeItem("userData");
-    localStorage.removeItem("token");
+    localStorage.clear();
     setUser(null);
     navigate("/");
   };

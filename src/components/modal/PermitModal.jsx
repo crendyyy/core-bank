@@ -38,7 +38,7 @@ const PermitModal = ({ isModalOpen, handleCancel, onFinish, form }) => {
           <Input.Password placeholder="Input Password" />
         </Form.Item>
         <Form.Item>
-          <button className="w-full bg-primary text-sm text-center text-white py-2.5 rounded">
+          <button className="w-full bg-primary text-sm text-center text-white py-2.5 rounded-lg">
             Submit
           </button>
         </Form.Item>

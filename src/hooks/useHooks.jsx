@@ -7,19 +7,31 @@ const useAxios = () => {
   const BASE_URL = "/api";
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
 
   const { setUser } = useUserContext();
-  const { setNavigation } = useNavigation();
+
+  let isRefreshing = false;
+  let failedQueue = [];
+
+  const processQueue = (error, token = null) => {
+    failedQueue.forEach(prom => {
+      if (error) {
+        prom.reject(error);
+      } else {
+        prom.resolve(token);
+      }
+    });
+    failedQueue = [];
+  };
 
   const axiosClient = axios.create({
     baseURL: BASE_URL,
     headers: {
-      Authorization: token ? `Bearer ${token}` : "",
+      Authorization: localStorage.getItem("token") ? `Bearer ${localStorage.getItem("token")}` : "",
     },
   });
 
-  axiosClient.interceptors.request.use((config) => {
+  axiosClient.interceptors.request.use(config => {
     const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -31,15 +43,61 @@ const useAxios = () => {
   });
 
   axiosClient.interceptors.response.use(
-    (response) => response,
-    (error) => {
-      if (error.response?.status === 401) {
-        queryClient.clear();
-        localStorage.removeItem("userData");
-        localStorage.removeItem("token");
-        setUser(null);
-        navigate("/");
+    response => response,
+    async error => {
+      const originalRequest = error.config;
+
+      if (error.response?.status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true;
+
+        if (isRefreshing) {
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          }).then(token => {
+            originalRequest.headers['Authorization'] = 'Bearer ' + token;
+            return axiosClient(originalRequest);
+          }).catch(err => {
+            return Promise.reject(err);
+          });
+        }
+
+        isRefreshing = true;
+
+        try {
+          const refreshToken = localStorage.getItem("refreshToken");
+          const accessToken = localStorage.getItem("token");
+
+          const res = await axios.post("/api/api/v1/Login/refresh-token", {
+            refreshToken,
+            accessToken
+          });
+
+          const newAccessToken = res.data.accessToken;
+          const newRefreshToken = res.data.refreshToken;
+
+          // Simpan token baru
+          localStorage.setItem("token", newAccessToken);
+          localStorage.setItem("refreshToken", newRefreshToken);
+
+          // Update header permintaan asli dan retry
+          axiosClient.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+          processQueue(null, newAccessToken);
+
+          originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+          return axiosClient(originalRequest);
+
+        } catch (err) {
+          processQueue(err, null);
+          queryClient.clear();
+          localStorage.clear();
+          setUser(null);
+          navigate("/");
+          return Promise.reject(err);
+        } finally {
+          isRefreshing = false;
+        }
       }
+
       return Promise.reject(error);
     }
   );

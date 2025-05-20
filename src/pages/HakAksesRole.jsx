@@ -449,6 +449,8 @@ const HakAksesRole = () => {
       align: "center",
       render: (actions, record) => (
         <Checkbox
+        className="!rounded-md"
+        style={{  borderRadius: "4px !important" }}
           checked={actions[action.actionMenuId] || false}
           onChange={(e) =>
             handlePermissionChange(

@@ -32,7 +32,7 @@ import {
   InfoCircleOutlined,
   RedoOutlined,
 } from "@ant-design/icons";
-import dayjs from "dayjs"; // Import dayjs untuk bekerja dengan DatePicker
+import dayjs from "dayjs"; 
 import { useLocation } from "react-router-dom";
 import { useGetUserPermissions } from "../service/menus/useGetMenus";
 import usePermitValidation from "../hooks/usePermitValidation";
@@ -51,7 +51,6 @@ const gradientPrimary = `linear-gradient(90deg, ${primaryColor} 0%, ${primaryCol
 const LapTransTABPerUser = () => {
   const [form] = Form.useForm();
   const [formPermit] = Form.useForm();
-  const [messageApi, contextHolderMsg] = message.useMessage();
   const [reportType, setReportType] = useState(null);
   const [date, setDate] = useState(null);
   const [codeBank, setCodeBank] = useState(null);
@@ -69,6 +68,7 @@ const LapTransTABPerUser = () => {
     closePermitModal,
     handlePermitSubmit,
     contextHolder,
+    messageApi
   } = usePermitValidation({ alwaysRequirePermit: false });
 
   const reportTypes = [
@@ -318,7 +318,6 @@ const LapTransTABPerUser = () => {
 
   return (
     <>
-      {contextHolderMsg}
       {contextHolder}
       <PermitModal
         isModalOpen={isPermitModalOpen}

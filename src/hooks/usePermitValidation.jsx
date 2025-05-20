@@ -122,7 +122,8 @@ const usePermitValidation = ({ alwaysRequirePermit = false } = {}) => {
     closeActionModal,
 
     currentAction,
-    contextHolder
+    contextHolder,
+    messageApi
     
   };
 };
