@@ -35,20 +35,23 @@ import {
 import dayjs from "dayjs"; // Import dayjs untuk bekerja dengan DatePicker
 import { useLocation } from "react-router-dom";
 import { useGetUserPermissions } from "../service/menus/useGetMenus";
+import usePermitValidation from "../hooks/usePermitValidation";
+import PermitModal from "../components/modal/PermitModal";
 
 const { Title, Text } = Typography;
 
-const primaryColor = "#2283F8"; 
-const secondaryColor = "#0C4A8C"; 
-const accentColor = "#4DABF5"; 
-const textPrimary = "#333333"; 
+const primaryColor = "#2283F8";
+const secondaryColor = "#0C4A8C";
+const accentColor = "#4DABF5";
+const textPrimary = "#333333";
 const textSecondary = "#6B7AAA";
 
 const gradientPrimary = `linear-gradient(90deg, ${primaryColor} 0%, ${primaryColor}DD 100%)`;
 
 const LapTransTABPerUser = () => {
   const [form] = Form.useForm();
-  const [messageApi, contextHolder] = message.useMessage();
+  const [formPermit] = Form.useForm();
+  const [messageApi, contextHolderMsg] = message.useMessage();
   const [reportType, setReportType] = useState(null);
   const [date, setDate] = useState(null);
   const [codeBank, setCodeBank] = useState(null);
@@ -59,6 +62,14 @@ const LapTransTABPerUser = () => {
 
   const axiosClient = useAxios();
   const { data: codeBankData, loading: codeBankLoading } = useGetCodeBank();
+
+  const {
+    validatePermission,
+    isPermitModalOpen,
+    closePermitModal,
+    handlePermitSubmit,
+    contextHolder,
+  } = usePermitValidation({ alwaysRequirePermit: false });
 
   const reportTypes = [
     {
@@ -105,17 +116,14 @@ const LapTransTABPerUser = () => {
     },
   ];
 
-      
-    const location = useLocation();
-    console.log(location.pathname);
-    
-    const { data: dataMenus } = useGetUserPermissions(location.pathname);
-    
-    console.log(dataMenus?.data);
+  const closeModal = () => {
+    closePermitModal();
+    formPermit.resetFields();
+  };
 
   const parseDateString = (dateString) => {
     if (!dateString) return null;
-    const parts = dateString.split('-');
+    const parts = dateString.split("-");
     if (parts.length === 3) {
       const day = parts[0];
       const month = parts[1];
@@ -125,119 +133,129 @@ const LapTransTABPerUser = () => {
     return null;
   };
 
-  const generatePDF = async (values) => {
-    if (!values.reportType || !values.date || !values.codeBank) {
-      messageApi.error("Mohon lengkapi semua data terlebih dahulu!");
-      return;
-    }
+  const generatePDF = (values) => {
+    validatePermission({
+      type: "print",
+      actionName: "CanPrint",
+      onSuccess: async () => {
+        setLoading(true);
+        try {
+          const formattedDate = values.date.format("DD-MM-YYYY");
+          const isFinancialReport =
+            values.reportType === "NERACA" || values.reportType === "LABARUGI";
+          const urlEndpoint = isFinancialReport
+            ? "GeneratePdf"
+            : "GeneratePdf2";
 
-    setLoading(true);
-    try {
-      const formattedDate = values.date.format("DD-MM-YYYY");
-      const isFinancialReport =
-        values.reportType === "NERACA" || values.reportType === "LABARUGI";
-      const urlEndpoint = isFinancialReport ? "GeneratePdf" : "GeneratePdf2";
+          const params = {
+            reportType: values.reportType,
+            date: formattedDate,
+            KodeBank: values.codeBank,
+            User: "sa",
+          };
 
-      const params = {
-        reportType: values.reportType,
-        date: formattedDate,
-        KodeBank: values.codeBank,
-        User: "sa",
-      };
+          if (!isFinancialReport) {
+            params.Tipe = values.reportType;
+          }
 
-      if (!isFinancialReport) {
-        params.Tipe = values.reportType;
-      }
+          const queryString = Object.entries(params)
+            .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+            .join("&");
 
-      const queryString = Object.entries(params)
-        .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
-        .join("&");
+          const url = `/Report/${urlEndpoint}?${queryString}`;
 
-      const url = `/Report/${urlEndpoint}?${queryString}`;
+          const response = await axiosClient._get(url, {
+            responseType: "blob",
+          });
 
-      const response = await axiosClient._get(url, { responseType: "blob" });
+          const contentDisposition = response.headers["content-disposition"];
+          let filename = `Report_${values.reportType}_${formattedDate}.pdf`;
 
-      const contentDisposition = response.headers["content-disposition"];
-      let filename = `Report_${values.reportType}_${formattedDate}.pdf`;
+          if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+            if (filenameMatch?.length > 1) {
+              filename = filenameMatch[1];
+            }
+          }
 
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-        if (filenameMatch?.length > 1) {
-          filename = filenameMatch[1];
+          const pdfBlob = new Blob([response.data], {
+            type: "application/pdf",
+          });
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+
+          setPdfData({
+            url: pdfUrl,
+            blob: pdfBlob,
+            filename: filename,
+          });
+
+          const selectedBank = codeBankData?.data?.find(
+            (bank) => bank.kodeBank === values.codeBank
+          );
+          const newReport = {
+            id: Date.now(),
+            reportType: values.reportType,
+            date: formattedDate,
+            codeBank: values.codeBank,
+            bankName: selectedBank?.nmSingkat || "Unknown Bank",
+            status: "success",
+            timestamp: new Date().toISOString(),
+          };
+
+          setRecentReports((prev) => [newReport, ...prev].slice(0, 5));
+          setPreviewVisible(true);
+          messageApi.success("PDF berhasil digenerate!");
+        } catch (error) {
+          const errorStatus = error.response?.status;
+          const errorMessage =
+            errorStatus === 404
+              ? "Data tidak ditemukan"
+              : "Gagal generate PDF. Silakan coba lagi.";
+
+          const selectedBank = codeBankData?.data?.find(
+            (bank) => bank.kodeBank === values.codeBank
+          );
+          const newReport = {
+            id: Date.now(),
+            reportType: values.reportType,
+            date: values.date.format("DD-MM-YYYY"),
+            codeBank: values.codeBank,
+            bankName: selectedBank?.nmSingkat || "Unknown Bank",
+            status: "failed",
+            timestamp: new Date().toISOString(),
+          };
+
+          setRecentReports((prev) => [newReport, ...prev].slice(0, 5));
+          messageApi.error(errorMessage);
+          console.error("PDF generation error:", error);
+        } finally {
+          setLoading(false);
         }
-      }
-
-      const pdfBlob = new Blob([response.data], { type: "application/pdf" });
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-
-      setPdfData({
-        url: pdfUrl,
-        blob: pdfBlob,
-        filename: filename,
-      });
-
-      const selectedBank = codeBankData?.data?.find(
-        (bank) => bank.kodeBank === values.codeBank
-      );
-      const newReport = {
-        id: Date.now(),
-        reportType: values.reportType,
-        date: formattedDate,
-        codeBank: values.codeBank,
-        bankName: selectedBank?.nmSingkat || "Unknown Bank",
-        status: "success",
-        timestamp: new Date().toISOString(),
-      };
-
-      setRecentReports((prev) => [newReport, ...prev].slice(0, 5));
-      setPreviewVisible(true);
-      messageApi.success("PDF berhasil digenerate!");
-    } catch (error) {
-      const errorStatus = error.response?.status;
-      const errorMessage =
-        errorStatus === 404
-          ? "Data tidak ditemukan"
-          : "Gagal generate PDF. Silakan coba lagi.";
-
-      const selectedBank = codeBankData?.data?.find(
-        (bank) => bank.kodeBank === values.codeBank
-      );
-      const newReport = {
-        id: Date.now(),
-        reportType: values.reportType,
-        date: values.date.format("DD-MM-YYYY"),
-        codeBank: values.codeBank,
-        bankName: selectedBank?.nmSingkat || "Unknown Bank",
-        status: "failed",
-        timestamp: new Date().toISOString(),
-      };
-
-      setRecentReports((prev) => [newReport, ...prev].slice(0, 5));
-      messageApi.error(errorMessage);
-      console.error("PDF generation error:", error);
-    } finally {
-      setLoading(false);
-    }
+        formPermit.resetFields();
+      },
+    });
   };
 
   const handleReportClick = async (report) => {
     if (report.status !== "success") {
-      messageApi.warning("Tidak dapat membuka kembali laporan yang gagal dibuat");
+      messageApi.warning(
+        "Tidak dapat membuka kembali laporan yang gagal dibuat"
+      );
       return;
     }
 
     const dateValue = parseDateString(report.date);
-    
+
     form.setFieldsValue({
       reportType: report.reportType,
       date: dateValue,
       codeBank: report.codeBank,
     });
-    
+
     setReportType(report.reportType);
     setDate(dateValue);
     setCodeBank(report.codeBank);
-    
+
     await generatePDF({
       reportType: report.reportType,
       date: dateValue,
@@ -300,7 +318,14 @@ const LapTransTABPerUser = () => {
 
   return (
     <>
+      {contextHolderMsg}
       {contextHolder}
+      <PermitModal
+        isModalOpen={isPermitModalOpen}
+        handleCancel={closeModal}
+        onFinish={handlePermitSubmit}
+        form={formPermit}
+      />
       <div className="bg-white p-6 rounded-lg">
         <Row gutter={[24, 24]}>
           <Col span={24}>
@@ -358,9 +383,7 @@ const LapTransTABPerUser = () => {
               >
                 <Form.Item
                   label={
-                    <span
-                      className="flex items-center font-medium text-textPrimary"
-                    >
+                    <span className="flex items-center font-medium text-textPrimary">
                       <FileSearchOutlined
                         style={{ marginRight: "8px", color: primaryColor }}
                       />
@@ -429,7 +452,7 @@ const LapTransTABPerUser = () => {
                       </span>
                     }
                     name="date"
-                    style={{ margin: "12px 0px 0px 0px", width:'100%' }}
+                    style={{ margin: "12px 0px 0px 0px", width: "100%" }}
                     rules={[
                       { required: true, message: "Silakan pilih tanggal" },
                     ]}
@@ -460,7 +483,7 @@ const LapTransTABPerUser = () => {
                       </span>
                     }
                     name="codeBank"
-                    style={{ margin: "12px 0px 0px 0px", width:'100%' }}
+                    style={{ margin: "12px 0px 0px 0px", width: "100%" }}
                     rules={[
                       { required: true, message: "Silakan pilih kode bank" },
                     ]}
@@ -476,7 +499,7 @@ const LapTransTABPerUser = () => {
                       showSearch
                       loading={codeBankLoading}
                       optionFilterProp="children"
-                      style={{ borderRadius: "10px", height: '40px' }}
+                      style={{ borderRadius: "10px", height: "40px" }}
                       filterOption={(input, option) =>
                         (option?.label?.toLowerCase() ?? "").includes(
                           input.toLowerCase()
@@ -543,7 +566,11 @@ const LapTransTABPerUser = () => {
                 </span>
               }
               className="shadow-lg rounded-xl border-0 scroll-smooth"
-              style={{ overflow: "auto", maxHeight: '362px',  scrollbarWidth: "thin"}}
+              style={{
+                overflow: "auto",
+                maxHeight: "362px",
+                scrollbarWidth: "thin",
+              }}
               styles={{
                 header: {
                   background: "white",
@@ -555,7 +582,7 @@ const LapTransTABPerUser = () => {
               }}
             >
               {recentReports.length > 0 ? (
-                <div className="flex flex-col gap-3" >
+                <div className="flex flex-col gap-3">
                   {recentReports.map((report) => (
                     <div
                       key={report.id}
@@ -564,9 +591,12 @@ const LapTransTABPerUser = () => {
                         borderLeft: `3px solid ${
                           report.status === "success" ? accentColor : "#f87171"
                         }`,
-                        cursor: report.status === "success" ? "pointer" : "default",
+                        cursor:
+                          report.status === "success" ? "pointer" : "default",
                       }}
-                      onClick={() => report.status === "success" && handleReportClick(report)}
+                      onClick={() =>
+                        report.status === "success" && handleReportClick(report)
+                      }
                     >
                       <div className="flex justify-between items-start">
                         <div>
@@ -630,7 +660,7 @@ const LapTransTABPerUser = () => {
               className="flex items-center justify-center w-8 h-8 mr-3 rounded-lg"
               style={{ background: gradientPrimary }}
             >
-              <FileSearchOutlined style={{ color: 'white' }}/>
+              <FileSearchOutlined style={{ color: "white" }} />
             </div>
             <span>Preview PDF</span>
           </div>

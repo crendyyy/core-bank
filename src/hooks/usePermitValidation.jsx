@@ -1,22 +1,19 @@
-import { useState } from "react";
+import { use, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useGetUserPermissions } from "../service/menus/useGetMenus";
-
-/**
- * Custom hook for handling permission validation across the application
- * 
- * @param {Object} options - Configuration options
- * @param {boolean} options.alwaysRequirePermit - Whether this page always requires permit validation
- * @returns {Object} Permission checking utilities and state
- */
+import { useUserValidasi } from "../service/userServices/userService";
+import { message } from "antd";
 const usePermitValidation = ({ alwaysRequirePermit = false } = {}) => {
   const location = useLocation();
   const { data: userPermission } = useGetUserPermissions(location.pathname);
+  const [messageApi, contextHolder] = message.useMessage();
 
   // State for tracking modals
   const [isPermitModalOpen, setIsPermitModalOpen] = useState(false);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
-  
+
+  const validasiUserMutation = useUserValidasi();
+
   // State to track the current action being processed
   const [currentAction, setCurrentAction] = useState({
     type: null, // Action type identifier (e.g., 'add', 'edit', 'delete')
@@ -28,20 +25,20 @@ const usePermitValidation = ({ alwaysRequirePermit = false } = {}) => {
   // Check if user has a specific permission
   const checkPermission = (actionName) => {
     if (!userPermission?.data) return false;
-    
+
     const permission = userPermission.data.find(
       (p) => p.actionName === actionName
     );
-    
+
     return permission?.isAllowed || false;
   };
 
   // Handle permit validation before executing an action
-  const validatePermission = ({ 
+  const validatePermission = ({
     type,
-    actionName, 
+    actionName,
     data = null,
-    onSuccess = null
+    onSuccess = null,
   }) => {
     // Store current action details
     setCurrentAction({
@@ -64,17 +61,34 @@ const usePermitValidation = ({ alwaysRequirePermit = false } = {}) => {
   };
 
   // Handle permit modal submit
-  const handlePermitSubmit = (values) => {
-    // Here you would typically validate the user credentials with API
-    // For now, we'll just assume validation is successful
+  const handlePermitSubmit = (value) => {
+    validasiUserMutation.mutate(
+      {
+        UserID: value.userId,
+        Password: value.password,
+        route: location.pathname,
+      },
+      {
+        onSuccess: (response) => {
 
-    // Close the permit modal
-    setIsPermitModalOpen(false);
-    
-    // Execute the action callback if provided
-    if (currentAction.onSuccess) {
-      currentAction.onSuccess(currentAction.data);
-    }
+          if (response.data.isAllowed) {
+            if (currentAction.onSuccess) {
+              currentAction.onSuccess(currentAction.data);
+            }
+            // Close the permit modal
+            setIsPermitModalOpen(false);
+          } else {
+            messageApi.open({
+              type: `error`,
+              content: `${response.data.message}`
+            });
+          }
+        },
+        onError: () => {
+          console.error("Error validating user");
+        },
+      }
+    );
   };
 
   // Close the permit modal
@@ -96,19 +110,20 @@ const usePermitValidation = ({ alwaysRequirePermit = false } = {}) => {
     // Permission checking
     checkPermission,
     validatePermission,
-    
+
     // Permit modal state and handlers
     isPermitModalOpen,
     closePermitModal,
     handlePermitSubmit,
-    
+
     // Action modal state and handlers
     isActionModalOpen,
     openActionModal,
     closeActionModal,
-    
-    // Current action being processed
+
     currentAction,
+    contextHolder
+    
   };
 };
 

@@ -1,5 +1,5 @@
 import Title from "antd/es/typography/Title";
-import { useGetRoles, useGetRolesAction } from "../service/roles/useGetRoles";
+import { useGetRoles } from "../service/roles/useGetRoles";
 import {
   Button,
   Card,
@@ -11,7 +11,7 @@ import {
   Space,
   Typography,
 } from "antd";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useDeleteRoles } from "../service/roles/useDeleteRoles";
 import { useUpdateRoles } from "../service/roles/useUpdateRoles";
 import RolesModal from "../components/modal/RolesModal";
@@ -23,57 +23,64 @@ import {
   SaveOutlined,
   CloseOutlined,
 } from "@ant-design/icons";
-import { useLocation } from "react-router-dom";
 import PermitModal from "../components/modal/PermitModal";
-import { useGetUserPermissions } from "../service/menus/useGetMenus";
+import usePermitValidation from "../hooks/usePermitValidation";
 
 const ManajemenRole = () => {
   const [form] = Form.useForm();
   const [formPermit] = Form.useForm();
-  const [isModalOpen, setIsModalOpen] = useState({
-    addRoleModal: false,
-    permitModal: false,
-  });
   const [editingKey, setEditingKey] = useState("");
   const [editInput, setEditInput] = useState("");
 
+  // Use our custom hook with alwaysRequirePermit set to true
+  const {
+    validatePermission,
+    isPermitModalOpen,
+    closePermitModal,
+    handlePermitSubmit,
+    isActionModalOpen,
+    openActionModal,
+    closeActionModal,
+    contextHolder,
+  } = usePermitValidation({ alwaysRequirePermit: true });
+
   const { data: roles } = useGetRoles();
-
   const deleteRolesMutation = useDeleteRoles();
-  const updateRolesRolesMutation = useUpdateRoles();
-  const createRolesRolesMutation = useCreateRoles();
-
-  
-  const location = useLocation();
-  console.log(location.pathname);
-  
-  const { data: userPermission } = useGetUserPermissions(location.pathname);
-  
-  console.log(userPermission?.data);
+  const updateRolesMutation = useUpdateRoles();
+  const createRolesMutation = useCreateRoles();
 
   const isEditing = (record) => record.key === editingKey;
 
-  const showModal = (modal) => {
-    setIsModalOpen((prev) => ({
-      ...prev,
-      [modal]: true,
-    }));
-  };
-
-  const closeModal = (modal) => {
-    setIsModalOpen((prev) => ({
-      ...prev,
-      [modal]: false,
-    }));
-  };
-
-  const handleDelete = (key) => {
-    deleteRolesMutation.mutate(key);
+  const closeModal = () => {
+    closePermitModal();
+    closeActionModal();
+    form.resetFields();
+    formPermit.resetFields();
   };
 
   const handleAdd = (value) => {
-    createRolesRolesMutation.mutate({ roleName: value.roleName });
-     closeModal("addRoleModal");
+    validatePermission({
+      type: "add",
+      actionName: "CanCreate",
+      onSuccess: () => {
+        createRolesMutation.mutate({ roleName: value.roleName });
+        closeActionModal();
+        form.resetFields();
+        formPermit.resetFields();
+      }, // Open add role modal
+    });
+  };
+
+  const handleDelete = (key) => {
+    validatePermission({
+      type: "delete",
+      actionName: "CanDelete",
+      data: key,
+      onSuccess: (key) => {
+        deleteRolesMutation.mutate(key);
+        formPermit.resetFields();
+      },
+    });
   };
 
   const edit = (record) => {
@@ -86,11 +93,19 @@ const ManajemenRole = () => {
   };
 
   const save = (record) => {
-    updateRolesRolesMutation.mutate({
-      id: record.key,
-      data: { roleName: editInput },
+    validatePermission({
+      type: "save",
+      actionName: "CanUpdate",
+      data: { record, editInput },
+      onSuccess: (data) => {
+        updateRolesMutation.mutate({
+          id: data.record.key,
+          data: { roleName: data.editInput },
+        });
+        setEditingKey("");
+        formPermit.resetFields();
+      },
     });
-    setEditingKey("");
   };
 
   const columns = [
@@ -123,7 +138,7 @@ const ManajemenRole = () => {
               editingKey === ""
                 ? `${
                     !/^[A-Z]/.test(record.key.toString())
-                      ? "hover:border  border-primary py-1 px-3 rounded pointer"
+                      ? "hover:border border-primary py-1 px-3 rounded pointer"
                       : ""
                   }`
                 : "opacity-50 not-allowed"
@@ -161,8 +176,9 @@ const ManajemenRole = () => {
               type="primary"
               icon={<EditOutlined />}
               size="small"
+              style={{ borderRadius: "8px" }}
               onClick={() => edit(record)}
-              className=" text-primary bg-white px-2 py-1 rounded-md w-full text-center text-xs hover:bg-primary hover:text-white"
+              className="text-primary bg-white px-2 py-1 rounded-lg border w-full text-center text-xs hover:bg-primary hover:text-white"
               disabled={editingKey !== ""}
             >
               Edit
@@ -176,6 +192,7 @@ const ManajemenRole = () => {
                 icon={<DeleteOutlined />}
                 danger
                 size="small"
+                style={{ borderRadius: "8px" }}
                 disabled={editingKey !== ""}
               >
                 Delete
@@ -194,16 +211,17 @@ const ManajemenRole = () => {
 
   return (
     <>
+      {contextHolder}
       <RolesModal
-        isModalOpen={isModalOpen.addRoleModal}
-        handleCancel={() => closeModal("addRoleModal")}
+        isModalOpen={isActionModalOpen}
+        handleCancel={closeModal}
         onFinish={handleAdd}
         form={form}
       />
-       <PermitModal
-        isModalOpen={isModalOpen.permitModal}
-        handleCancel={() => closeModal("permitModal")}
-        onFinish={''}
+      <PermitModal
+        isModalOpen={isPermitModalOpen}
+        handleCancel={closeModal}
+        onFinish={handlePermitSubmit}
         form={formPermit}
       />
       <Flex vertical gap={24}>
@@ -232,7 +250,7 @@ const ManajemenRole = () => {
             <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
               <Flex justify="space-between" align="center">
                 <Button
-                  onClick={() => showModal("addRoleModal")}
+                  onClick={openActionModal}
                   type="primary"
                   icon={<PlusCircleOutlined />}
                   size="large"

@@ -11,6 +11,7 @@ import {
   Tabs,
   Badge,
   Flex,
+  Form,
 } from "antd";
 import { CopyOutlined, SaveOutlined } from "@ant-design/icons";
 import { useGetRoles, useGetRolesAction } from "../service/roles/useGetRoles";
@@ -22,10 +23,13 @@ import {
 } from "../service/menus/useGetMenus";
 import { useUpdateRolesAccess } from "../service/roles/useUpdateRoleAccess";
 import { useLocation } from "react-router-dom";
+import usePermitValidation from "../hooks/usePermitValidation";
+import PermitModal from "../components/modal/PermitModal";
 
 const { Title, Text } = Typography;
 
 const HakAksesRole = () => {
+  const [formPermit] = Form.useForm();
   const [roleId, setRoleId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [permissions, setPermissions] = useState([]);
@@ -37,6 +41,14 @@ const HakAksesRole = () => {
   const [copyFromRoleId, setCopyFromRoleId] = useState(null);
   const [copyingAccess, setCopyingAccess] = useState(false);
 
+  const {
+    validatePermission,
+    isPermitModalOpen,
+    closePermitModal,
+    handlePermitSubmit,
+    contextHolder,
+  } = usePermitValidation({ alwaysRequirePermit: true });
+
   const { data: rolesAction = [] } = useGetRolesAction();
   const { data: menus = [] } = useGetAllMenus();
   const { data: roles = [], isLoading: loadingRoles } = useGetRoles();
@@ -46,14 +58,6 @@ const HakAksesRole = () => {
     useGetRolesAccess(copyFromRoleId);
 
   const updateRoleAccessMutation = useUpdateRolesAccess(roleId);
-
-    
-    const location = useLocation();
-    console.log(location.pathname);
-    
-    const { data: dataMenus } = useGetUserPermissions(location.pathname);
-    
-    console.log(dataMenus?.data);
 
   useEffect(() => {
     if (roleId && menus && menus?.data?.length > 0) {
@@ -237,6 +241,11 @@ const HakAksesRole = () => {
     setCopyingAccess(true);
   };
 
+  const closeModal = () => {
+    closePermitModal();
+    formPermit.resetFields();
+  };
+
   const getActiveModuleId = () => {
     return activeTabKey ? parseInt(activeTabKey) : modules[0]?.id || null;
   };
@@ -332,61 +341,57 @@ const HakAksesRole = () => {
   };
 
   const saveChanges = async () => {
-    try {
-      setSavingChanges(true);
+    validatePermission({
+      type: "update",
+      actionName: "CanUpdate",
+      onSuccess: () => {
+        try {
+          setSavingChanges(true);
 
-      const updatedPermissions = [];
+          const updatedPermissions = [];
 
-      permissions.forEach((perm) => {
-        const originalPerm = originalPermissions.find(
-          (op) => op.modId === perm.modId && op.menuId === perm.menuId
-        );
+          permissions.forEach((perm) => {
+            const originalPerm = originalPermissions.find(
+              (op) => op.modId === perm.modId && op.menuId === perm.menuId
+            );
 
-        if (originalPerm) {
-          Object.entries(perm.actions).forEach(([actionId, isAllowed]) => {
-            if (originalPerm.actions[actionId] !== isAllowed) {
-              updatedPermissions.push({
-                modId: perm.modId,
-                menuId: perm.menuId,
-                actionId: parseInt(actionId),
-                isAllowed,
+            if (originalPerm) {
+              Object.entries(perm.actions).forEach(([actionId, isAllowed]) => {
+                if (originalPerm.actions[actionId] !== isAllowed) {
+                  updatedPermissions.push({
+                    modId: perm.modId,
+                    menuId: perm.menuId,
+                    actionId: parseInt(actionId),
+                    isAllowed,
+                  });
+                }
+              });
+            } else {
+              Object.entries(perm.actions).forEach(([actionId, isAllowed]) => {
+                updatedPermissions.push({
+                  modId: perm.modId,
+                  menuId: perm.menuId,
+                  actionId: parseInt(actionId),
+                  isAllowed,
+                });
               });
             }
           });
-        } else {
-          Object.entries(perm.actions).forEach(([actionId, isAllowed]) => {
-            updatedPermissions.push({
-              modId: perm.modId,
-              menuId: perm.menuId,
-              actionId: parseInt(actionId),
-              isAllowed,
-            });
+
+          updateRoleAccessMutation.mutate({
+            id: roleId,
+            data: updatedPermissions,
           });
+          setChangeCount(0); // Reset change count after saving
+          formPermit.resetFields();
+        } catch (error) {
+          console.error("Failed to save permissions:", error);
+          message.error("Gagal menyimpan hak akses");
+        } finally {
+          setSavingChanges(false);
         }
-      });
-
-      console.log("Saving permissions:", updatedPermissions);
-      updateRoleAccessMutation.mutate({ id: roleId, data: updatedPermissions });
-      message.success(`Berhasil menyimpan hak akses untuk ${changeCount} menu`);
-      setChangeCount(0); // Reset change count after saving
-    } catch (error) {
-      console.error("Failed to save permissions:", error);
-      message.error("Gagal menyimpan hak akses");
-    } finally {
-      setSavingChanges(false);
-    }
-  };
-
-  const getActionName = (actionId) => {
-    if (!rolesAction || !Array.isArray(rolesAction)) {
-      return "Unknown";
-    }
-
-    const foundAction = rolesAction?.data?.find(
-      (action) => action.actionMenuId === actionId
-    );
-
-    return foundAction ? foundAction.actionMenuName : "Unknown";
+      },
+    });
   };
 
   const menuColumn = {
@@ -462,6 +467,13 @@ const HakAksesRole = () => {
 
   return (
     <>
+      {contextHolder}
+      <PermitModal
+        isModalOpen={isPermitModalOpen}
+        handleCancel={closeModal}
+        onFinish={handlePermitSubmit}
+        form={formPermit}
+      />
       <Card style={{ borderRadius: "8px", marginBottom: "20px" }}>
         <div className="flex justify-between items-center mb-6">
           <Title level={2} style={{ margin: 0 }}>
@@ -473,7 +485,8 @@ const HakAksesRole = () => {
                 placeholder="Salin dari Role"
                 value={copyFromRoleId}
                 onChange={(value) => setCopyFromRoleId(value)}
-                className="w-48"
+                className="w-48 !rounded-xl"
+                dropdownStyle={{ borderRadius: "8px" }}
                 popupMatchSelectWidth={false}
                 loading={loadingRoles}
                 disabled={copyingAccess || savingChanges || loadingSourceAccess}
@@ -487,6 +500,7 @@ const HakAksesRole = () => {
               <Button
                 type="default"
                 icon={<CopyOutlined />}
+                style={{ borderRadius: "8px" }}
                 onClick={copyAccessFromRole}
                 loading={copyingAccess || loadingSourceAccess}
                 disabled={!copyFromRoleId || copyFromRoleId === roleId}
@@ -497,6 +511,7 @@ const HakAksesRole = () => {
                 type="primary"
                 icon={<SaveOutlined />}
                 onClick={saveChanges}
+                style={{ borderRadius: "8px" }}
                 loading={savingChanges}
                 disabled={!roleId}
               >
@@ -523,8 +538,8 @@ const HakAksesRole = () => {
           showSearch
           allowClear
           optionFilterProp="label"
-          style={{ borderRadius: "10px", marginBottom: "20px" }}
-          dropdownStyle={{ borderRadius: "10px" }}
+          style={{ borderRadius: "8px", marginBottom: "20px" }}
+          dropdownStyle={{ borderRadius: "8px" }}
           options={roles?.data?.map((role) => ({
             value: role.roleId,
             label: role.roleName,

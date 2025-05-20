@@ -12,6 +12,7 @@ import {
   Input,
   Card,
   Tooltip,
+  Form,
 } from "antd";
 import {
   SearchOutlined,
@@ -22,10 +23,13 @@ import {
 import { useGetRoles } from "../service/roles/useGetRoles";
 import { useAssignRolesUser } from "../service/userServices/useAssignRoleUser";
 import { useDeleteRolesUser } from "../service/userServices/useDeleteRoleUser";
+import usePermitValidation from "../hooks/usePermitValidation";
+import PermitModal from "../components/modal/PermitModal";
 
 const { Option } = Select;
 
 const ManajemenRolePengguna = () => {
+  const [formPermit] = Form.useForm();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchText, setSearchText] = useState("");
@@ -40,23 +44,49 @@ const ManajemenRolePengguna = () => {
   const assignRoleMutation = useAssignRolesUser();
   const deleteRoleMutation = useDeleteRolesUser();
 
+  const {
+    validatePermission,
+    isPermitModalOpen,
+    closePermitModal,
+    handlePermitSubmit,
+    contextHolder,
+  } = usePermitValidation({ alwaysRequirePermit: true });
+
   const assignRole = () => {
-    if (!selectedUser || !selectedRole) {
-      message.error("Mohon pilih pengguna dan peran");
-      return;
-    }
-    assignRoleMutation.mutate({
-      userId: selectedUser.userId,
-      roleId: selectedRole,
+    validatePermission({
+      type: "add",
+      actionName: "CanCreate",
+      onSuccess: () => {
+        assignRoleMutation.mutate({
+          userId: selectedUser.userId,
+          roleId: selectedRole,
+        });
+        setIsModalVisible(false);
+        setSelectedUser(null);
+        setSelectedRole(null);
+        formPermit.resetFields();
+      },
     });
-    setIsModalVisible(false);
   };
 
   const removeRole = (user, roleId) => {
-    deleteRoleMutation.mutate({
-      userId: user.userId,
-      roleId: roleId,
+    validatePermission({
+      type: "delete",
+      actionName: "CanDelete",
+      data: { userId: user.userId, roleId },
+      onSuccess: () => {
+        deleteRoleMutation.mutate({
+          userId: user.userId,
+          roleId: roleId,
+        });
+        formPermit.resetFields();
+      },
     });
+  };
+
+  const closeModal = () => {
+    closePermitModal();
+    formPermit.resetFields();
   };
 
   useEffect(() => {
@@ -128,6 +158,7 @@ const ManajemenRolePengguna = () => {
                   color="blue"
                   key={`${record.userId}-${role.roleId}`}
                   closable
+                  className="border !rounded-lg"
                   onClose={(e) => {
                     e.preventDefault();
                     Modal.confirm({
@@ -156,6 +187,7 @@ const ManajemenRolePengguna = () => {
         <Button
           type="primary"
           icon={<PlusOutlined />}
+          className="border !rounded-lg"
           onClick={() => {
             setSelectedUser(record);
             setIsModalVisible(true);
@@ -171,6 +203,7 @@ const ManajemenRolePengguna = () => {
     <Modal
       title={`Tambah Role untuk ${selectedUser?.userNm || ""}`}
       open={isModalVisible}
+      zIndex={900}
       onCancel={() => {
         setIsModalVisible(false);
         setSelectedUser(null);
@@ -179,6 +212,7 @@ const ManajemenRolePengguna = () => {
       footer={[
         <Button
           key="cancel"
+          className="border !rounded-lg"
           onClick={() => {
             setIsModalVisible(false);
             setSelectedUser(null);
@@ -190,6 +224,7 @@ const ManajemenRolePengguna = () => {
         <Button
           key="submit"
           type="primary"
+          className=" border !rounded-lg"
           loading={loading}
           onClick={assignRole}
           disabled={!selectedRole}
@@ -205,25 +240,18 @@ const ManajemenRolePengguna = () => {
           placeholder="Pilih role yang akan ditambahkan"
           onChange={(value) => setSelectedRole(value)}
           value={selectedRole}
-        >
-          {roles?.data?.map((role) => (
-            <Option
-              key={role.roleId}
-              value={role.roleId}
-              disabled={selectedUser?.roles.some(
-                (r) => r.roleId === role.roleId
-              )}
-            >
-              {role.roleName}
-            </Option>
-          ))}
-        </Select>
+          options={roles?.data?.map((role) => ({
+            value: role.roleId,
+            label: role.roleName,
+            disabled: selectedUser?.roles.some((r) => r.roleId === role.roleId),
+          }))}
+        />
         {selectedUser?.roles.length > 0 && (
           <div className="mt-4">
             <p className="text-sm text-gray-500">Role yang sudah dimiliki:</p>
             <div className="mt-2">
               {selectedUser.roles.map((role) => (
-                <Tag color="blue" key={role.roleId}>
+                <Tag color="blue" key={role.roleId} className="!rounded-lg">
                   {role.roleName}
                 </Tag>
               ))}
@@ -236,6 +264,13 @@ const ManajemenRolePengguna = () => {
 
   return (
     <>
+      {contextHolder}
+      <PermitModal
+        isModalOpen={isPermitModalOpen}
+        handleCancel={closeModal}
+        onFinish={handlePermitSubmit}
+        form={formPermit}
+      />
       <Card className="mb-6">
         <Title level={2} className="mb-4">
           Manajemen Role Pengguna

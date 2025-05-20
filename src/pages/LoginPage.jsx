@@ -76,7 +76,7 @@ const LoginPage = () => {
           message.success({ content: "Login berhasil", key });
           setFormSubmitted(true);
         } else {
-          message.error({ content: "Token tidak valid", key });
+          message.error({ content: "Login gagal", key });
         }
       },
       onError: (error) => {
@@ -155,11 +155,10 @@ const LoginPage = () => {
                     style={{ color: textSecondary }}
                   />
                 }
+                variant="filled"
                 placeholder="Masukkan username"
                 style={{
                   borderRadius: "12px",
-                  backgroundColor: bgLight,
-                  border: "none",
                   padding: "12px 16px",
                 }}
               />
@@ -178,10 +177,9 @@ const LoginPage = () => {
                   />
                 }
                 placeholder="Masukkan password"
+                variant="filled"
                 style={{
                   borderRadius: "12px",
-                  backgroundColor: bgLight,
-                  border: "none",
                   padding: "12px 16px",
                 }}
               />
@@ -191,16 +189,23 @@ const LoginPage = () => {
               label={
                 <div className="flex gap-2">
                   <span style={{ color: textPrimary }}>Kode Bank</span>
-                  <span className="text-gray-400">(Optional)</span>
                 </div>
               }
               name="kodeBank"
+              rules={[{ required: true, message: "Kode Bank wajib diisi!" }]}
             >
               <Select
                 placeholder={
                   codeBankLoading ? "Memuat data bank..." : "Pilih Kode Bank"
                 }
-                className="w-full"
+                variant="filled"
+                allowClear
+                prefix={
+                  <BankOutlined
+                    className="mr-2"
+                    style={{ color: textSecondary }}
+                  />
+                }
                 showSearch
                 loading={codeBankLoading}
                 optionFilterProp="children"

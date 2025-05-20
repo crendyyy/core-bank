@@ -33,6 +33,7 @@ import {
 import { useGetUserNavigation } from "../service/menus/useGetMenus";
 import { useNavigation } from "../components/context/NavigationContext";
 import NotFound from "../pages/NotFoundPages";
+import { Bounce, ToastContainer } from "react-toastify";
 
 const LayoutPage = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -51,8 +52,14 @@ const LayoutPage = () => {
   };
 
   return (
-    <Layout style={{ minHeight: "100vh", }}>
-      <Sider trigger={null} collapsible collapsed={collapsed} width={280} className="!bg-white">
+    <Layout style={{ minHeight: "100vh" }}>
+      <Sider
+        trigger={null}
+        collapsible
+        collapsed={collapsed}
+        width={280}
+        className="!bg-white"
+      >
         <Sidebar collapse={collapsed} />
       </Sider>
       <Layout>
@@ -83,7 +90,7 @@ const LayoutPage = () => {
           />
           <div className="flex items-center ml-auto mr-6">
             <Space size={12} align="center">
-               {user?.limit !== undefined && (
+              {user?.limit !== undefined && (
                 <Tooltip title="Limit User">
                   <div className="py-0 px-2.5 bg-blue-100 border border-solid border-primary h-10 rounded-3xl flex items-center gap-2">
                     <span className="text-primary text-xs font-medium whitespace-nowrap">
@@ -169,7 +176,7 @@ const DynamicRoutes = () => {
         import(`../pages/${toComponentName(menu.menuName)}.jsx`)
       );
       const LazyWrapper = ({ Component }) => (
-        <Suspense fallback={<Spin/>}>
+        <Suspense fallback={<Spin />}>
           <Component />
         </Suspense>
       );
@@ -184,7 +191,18 @@ const DynamicRoutes = () => {
   const routes = [
     {
       path: "/",
-      element: <LoginPage />,
+      element: (
+        <>
+          <ToastContainer
+            position="top-right"
+            autoClose={2000}
+            draggable={true}
+            transition={Bounce}
+            pauseOnHover={false}
+          />
+          <LoginPage />,
+        </>
+      ),
     },
     {
       element: <Outlet />,
@@ -193,6 +211,13 @@ const DynamicRoutes = () => {
           path: "/",
           element: (
             <ProtectedRoutes>
+              <ToastContainer
+                position="top-right"
+                autoClose={2000}
+                draggable={true}
+                transition={Bounce}
+                pauseOnHover={false}
+              />
               <LayoutPage />
             </ProtectedRoutes>
           ),

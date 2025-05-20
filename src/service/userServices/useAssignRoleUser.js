@@ -1,28 +1,28 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useAxios from "../../hooks/useHooks";
 import userKeys from ".";
-// import useLoadingToast from "../../../../hooks/useToast";
+import useLoadingToast from "../../hooks/useToast";
 
 export const useAssignRolesUser = () => {
   const queryClient = useQueryClient();
   const axiosClient = useAxios();
-//   const toast = useLoadingToast();
+  const toast = useLoadingToast();
 
   return useMutation({
     mutationFn: (data) => {
-    //   toast.loading("Create owner....");
+      toast.loading("Assign Role User....");
       return axiosClient._post(`/api/v1/User/AssignRole`, data);
     },
 
     onSuccess: (response) => {
-    //   toast.update("Owner create successfully.", "success");
+      toast.update("Role User Assign successfully.", "success");
 
       // Refresh data related to the stock after a successful update
       queryClient.invalidateQueries({ queryKey: userKeys.listsUser });
     },
 
-    onError: () => {
-    //   toast.update("Failed to create owner, please try again", "error");
+     onError: (response) => {
+      toast.update(`${response?.response?.data?.message}`, "error");
     },
   });
 };

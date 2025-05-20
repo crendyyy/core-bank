@@ -28,7 +28,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             colorPrimary: "#2283F8",
             colorBgContainer: "#ffffff",
             fontFamily: "Inter",
-            borderRadius: "4px",
+            borderRadius: "8px",
           },
         }}
       >

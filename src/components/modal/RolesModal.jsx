@@ -6,6 +6,7 @@ const RolesModal = ({ isModalOpen, handleCancel, onFinish, form }) => {
     <Modal
       title={`Tambah Role`}
       open={isModalOpen}
+      zIndex={900}
       onCancel={handleCancel}
       okButtonProps={{ style: { display: "none" } }}
       cancelButtonProps={{ style: { display: "none" } }}
@@ -22,10 +23,10 @@ const RolesModal = ({ isModalOpen, handleCancel, onFinish, form }) => {
             },
           ]}
         >
-          <Input placeholder="Input Role Name" />
+          <Input className="border !rounded-lg" placeholder="Input Role Name" />
         </Form.Item>
         <Form.Item>
-          <button className="w-full bg-primary text-sm text-center text-white py-2.5 rounded">Submit</button>
+          <button className="w-full bg-primary text-sm text-center text-white rounded-lg py-2.5 rounded">Submit</button>
         </Form.Item>
       </Form>
     </Modal>

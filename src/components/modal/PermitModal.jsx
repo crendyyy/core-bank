@@ -4,8 +4,9 @@ import { useEffect } from "react";
 const PermitModal = ({ isModalOpen, handleCancel, onFinish, form }) => {
   return (
     <Modal
-      title={`Permit`}
+      title={`Otorisasi`}
       open={isModalOpen}
+      zIndex={1000}
       onCancel={handleCancel}
       okButtonProps={{ style: { display: "none" } }}
       cancelButtonProps={{ style: { display: "none" } }}

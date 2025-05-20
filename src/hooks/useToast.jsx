@@ -13,7 +13,7 @@ const useLoadingToast = () => {
       render: message,
       type: toastType,
       isLoading: false,
-      autoClose: 1500,
+      autoClose: 2000,
     });
   };
 
