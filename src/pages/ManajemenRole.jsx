@@ -32,7 +32,7 @@ const ManajemenRole = () => {
   const [editingKey, setEditingKey] = useState("");
   const [editInput, setEditInput] = useState("");
 
-  // Use our custom hook with alwaysRequirePermit set to true
+  // Use our custom hook with alwaysRequirePermit set to true to ensure permit validation is always required
   const {
     validatePermission,
     isPermitModalOpen,
