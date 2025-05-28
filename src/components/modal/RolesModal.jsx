@@ -26,7 +26,7 @@ const RolesModal = ({ isModalOpen, handleCancel, onFinish, form }) => {
           <Input className="border !rounded-lg" placeholder="Input Role Name" />
         </Form.Item>
         <Form.Item>
-          <button className="w-full bg-primary text-sm text-center text-white rounded-lg py-2.5 rounded">Submit</button>
+          <button className="w-full bg-primary text-sm text-center text-white rounded-lg py-2.5">Submit</button>
         </Form.Item>
       </Form>
     </Modal>
