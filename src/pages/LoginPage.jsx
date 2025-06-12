@@ -60,10 +60,11 @@ const LoginPage = () => {
     loginMutation.mutate(loginValues, {
       onSuccess: async (data) => {
         if (data?.data?.token) {
-          const { token, nama, kdposisi, limit, refreshToken } = data.data;
+          const { token, nama, jabatan, limit, kdBank, refreshToken } =
+            data.data;
           localStorage.setItem("token", token);
           localStorage.setItem("refreshToken", refreshToken);
-          setUser({ nama, kdposisi, limit });
+          setUser({ nama, jabatan, limit, kdBank });
 
           try {
             const nav = await fetchUserNavigation(axiosClient);

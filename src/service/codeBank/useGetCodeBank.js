@@ -14,3 +14,17 @@ export const useGetCodeBank = () => {
 
   return { ...query, data: query.data?.data };
 };
+
+export const useGetBranch = () => {
+  const axiosClient = useAxios();
+
+  const cacheKey = codeBankKeys.listscodeBranch;
+
+  const query = useQuery({
+    queryKey: cacheKey,
+    staleTime: Infinity,
+    queryFn: () => axiosClient._get(`/api/v1/User/GetHakAkses`),
+  });
+
+  return { ...query, data: query.data?.data };
+};
