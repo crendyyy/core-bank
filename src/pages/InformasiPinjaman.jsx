@@ -11,8 +11,9 @@ import {
   Space,
   Breadcrumb,
   Tabs,
+  Spin,
 } from "antd";
-import { SearchOutlined, HomeOutlined } from "@ant-design/icons";
+import { SearchOutlined, HomeOutlined, LeftOutlined } from "@ant-design/icons";
 import Title from "antd/es/typography/Title";
 import { useGetCIF } from "../service/CIF/useGetCIF";
 import { useGetDetailPinjaman } from "../service/Pinjaman/useGetKreditDetail";
@@ -584,15 +585,25 @@ const InformasiPinjaman = () => {
       );
     }
 
-    return <Breadcrumb items={items} className="mb-4" />;
+    return <Breadcrumb items={items} className="mb-4 bg-white px-3 py-2 rounded-lg border border-gray-100" />;
   };
 
   // Render search form
   const renderSearchForm = () => (
-    <Card title="Pencarian CIF">
-      <Row gutter={[16, 16]}>
+    <Card
+      title={<span className="text-gray-700">Pencarian CIF</span>}
+      className="shadow-sm border border-gray-100 rounded-xl"
+      extra={
+        <Button type="primary" size="middle" icon={<SearchOutlined />} onClick={handleSearchCIF}>
+          Cari
+        </Button>
+      }
+    >
+      <Row gutter={[12, 12]}>
         <Col span={6}>
           <Input
+            allowClear
+            size="middle"
             placeholder="Nama"
             value={searchParams.nama}
             onChange={(e) =>
@@ -602,6 +613,8 @@ const InformasiPinjaman = () => {
         </Col>
         <Col span={6}>
           <Input
+            allowClear
+            size="middle"
             placeholder="No Kartu ID"
             value={searchParams.noKartuID}
             onChange={(e) =>
@@ -614,6 +627,8 @@ const InformasiPinjaman = () => {
         </Col>
         <Col span={6}>
           <Input
+            allowClear
+            size="middle"
             placeholder="Tempat Lahir"
             value={searchParams.tempatLahir}
             onChange={(e) =>
@@ -626,6 +641,8 @@ const InformasiPinjaman = () => {
         </Col>
         <Col span={6}>
           <Input
+            allowClear
+            size="middle"
             placeholder="Nama Ibu Kandung"
             value={searchParams.namaIbuKandung}
             onChange={(e) =>
@@ -638,58 +655,62 @@ const InformasiPinjaman = () => {
           />
         </Col>
       </Row>
-      <Row className="mt-4">
-        <Col>
-          <Button
-            type="primary"
-            icon={<SearchOutlined />}
-            onClick={handleSearchCIF}
-          >
-            Cari
-          </Button>
-        </Col>
-      </Row>
     </Card>
   );
 
   // Render CIF list
   const renderCIFList = () => (
-    <Card title="Daftar CIF">
+    <Card
+      title={<span className="text-gray-700">Daftar CIF</span>}
+      className="shadow-sm border border-gray-100 rounded-xl"
+    >
       <Table
+        size="small"
         columns={cifColumns}
         dataSource={dataCIF?.data}
         rowKey="noCIF"
         scroll={{ x: true }}
+        bordered
+        pagination={{ pageSize: 10, showSizeChanger: true }}
       />
     </Card>
   );
 
   // Render kredit list
   const renderKreditList = () => (
-    <Card title={`Daftar Kredit Rekening - ${selectedCIF?.nama}`}>
-      <Space className="mb-4">
-        <span>Status Kredit:</span>
-        <Select
-          value={kreditStatus}
-          onChange={handleStatusChange}
-          style={{ width: 120 }}
-        >
-          <Option value="A">Aktif (A)</Option>
-          <Option value="L">Lunas (L)</Option>
-        </Select>
-      </Space>
+    <Card
+      title={<span className="text-gray-700">{`Daftar Kredit Rekening - ${selectedCIF?.nama}`}</span>}
+      className="shadow-sm border border-gray-100 rounded-xl"
+      extra={
+        <Space size={8}>
+          <span className="text-gray-500">Status Kredit</span>
+          <Select value={kreditStatus} onChange={handleStatusChange} style={{ width: 140 }} size="middle">
+            <Option value="A">Aktif (A)</Option>
+            <Option value="L">Lunas (L)</Option>
+          </Select>
+        </Space>
+      }
+    >
       <Table
+        size="small"
         columns={kreditColumns}
         dataSource={dataKreditRekening?.data}
         rowKey="noRekKredit"
         scroll={{ x: true }}
+        bordered
+        pagination={{ pageSize: 10, showSizeChanger: true }}
       />
     </Card>
   );
 
   // Render kredit detail with tabs
   const renderKreditDetail = () => {
-    if (!detailPinjaman?.data?.kreditDetail) return <div>Loading...</div>;
+    if (!detailPinjaman?.data?.kreditDetail)
+      return (
+        <div className="flex items-center gap-2 text-gray-500">
+          <Spin size="small" /> Memuat detail...
+        </div>
+      );
 
     const calculateOutstanding = (data) => {
       let prevOutstanding = 0;
@@ -722,33 +743,38 @@ const InformasiPinjaman = () => {
     console.log("Jaminan Kredit Data:", jaminanKreditData);
 
     return (
-      <Card title={`Detail Pinjaman - ${kreditDetail?.noRekKredit}`}>
-        <Space className="mb-4" wrap>
-          <span>Data Tambahan:</span>
-          <Select
-            value={transParameter}
-            onChange={handleTransParameterChange}
-            style={{ width: 200 }}
-            placeholder="Pilih data tambahan"
-          >
-            <Option value="T">Transaksi</Option>
-            <Option value="AB">Angsuran Bunga</Option>
-          </Select>
-
-          <span>Data Jaminan:</span>
-          <Select
-            value={jaminanParameter}
-            onChange={handleJaminanParameterChange}
-            style={{ width: 200 }}
-            placeholder="Pilih data jaminan"
-            allowClear
-          >
-            <Option value="J">Jaminan</Option>
-            <Option value="K">Jaminan Kredit</Option>
-          </Select>
-        </Space>
-
-        <Tabs defaultActiveKey="1">
+      <Card
+        title={<span className="text-gray-700">{`Detail Pinjaman - ${kreditDetail?.noRekKredit}`}</span>}
+        className="shadow-sm border border-gray-100 rounded-xl"
+        extra={
+          <Space size={8} wrap>
+            <span className="text-gray-500">Data Tambahan</span>
+            <Select
+              value={transParameter}
+              onChange={handleTransParameterChange}
+              style={{ width: 200 }}
+              placeholder="Pilih data tambahan"
+              size="middle"
+            >
+              <Option value="T">Transaksi</Option>
+              <Option value="AB">Angsuran Bunga</Option>
+            </Select>
+            <span className="text-gray-500">Data Jaminan</span>
+            <Select
+              value={jaminanParameter}
+              onChange={handleJaminanParameterChange}
+              style={{ width: 200 }}
+              placeholder="Pilih data jaminan"
+              allowClear
+              size="middle"
+            >
+              <Option value="J">Jaminan</Option>
+              <Option value="K">Jaminan Kredit</Option>
+            </Select>
+          </Space>
+        }
+      >
+        <Tabs defaultActiveKey="1" className="[&_.ant-tabs-nav]:mb-4">
           <TabPane tab="Informasi Umum" key="1">
             <Row gutter={[16, 16]}>
               <Col span={8}>
@@ -905,9 +931,12 @@ const InformasiPinjaman = () => {
           {transParameter === "T" && (
             <TabPane tab="Transaksi" key="transaksi">
               <Table
+                size="small"
                 columns={transaksiColumns}
                 dataSource={transaksiData}
                 rowKey={(record, index) => `${record.noSeq}-${index}`}
+                bordered
+                sticky
                 scroll={{ x: true }}
                 pagination={{
                   pageSize: 10,
@@ -922,9 +951,12 @@ const InformasiPinjaman = () => {
           {transParameter === "AB" && (
             <TabPane tab="Angsuran Bunga" key="tagihan">
               <Table
+                size="small"
                 columns={tagihanColumns}
                 dataSource={tagihanData}
                 rowKey={(record, index) => `${record.cclKe}-${index}`}
+                bordered
+                sticky
                 scroll={{ x: true }}
                 pagination={{
                   pageSize: 10,
@@ -939,9 +971,12 @@ const InformasiPinjaman = () => {
           {jaminanParameter === "J" && jaminanData.length > 0 && (
             <TabPane tab="Jaminan" key="jaminan">
               <Table
+                size="small"
                 columns={jaminanColumns}
                 dataSource={jaminanData}
                 rowKey={(record, index) => `${record.idJaminan}-${index}`}
+                bordered
+                sticky
                 scroll={{ x: true }}
                 pagination={{
                   pageSize: 10,
@@ -956,11 +991,14 @@ const InformasiPinjaman = () => {
           {jaminanParameter === "K" && jaminanKreditData.length > 0 && (
             <TabPane tab="Jaminan Kredit" key="jaminanKredit">
               <Table
+                size="small"
                 columns={jaminanKreditColumns}
                 dataSource={jaminanKreditData}
                 rowKey={(record, index) =>
                   `${record.noSeq}-${record.idJaminan}-${index}`
                 }
+                bordered
+                sticky
                 scroll={{ x: true }}
                 pagination={{
                   pageSize: 10,
@@ -969,17 +1007,8 @@ const InformasiPinjaman = () => {
                 }}
                 expandable={{
                   expandedRowRender: (record) => (
-                    <div
-                      style={{
-                        margin: 0,
-                        padding: "16px",
-                        background: "#fafafa",
-                      }}
-                    >
+                    <div className="m-0 p-4 bg-gray-50 rounded-md">
                       <Row gutter={[16, 8]}>
-                        {/* <Col span={8}>
-                          <strong>Kode Bank:</strong> {record.kodeBank}
-                        </Col> */}
                         <Col span={12}>
                           <strong>No Rekening Pinjaman Linked:</strong>{" "}
                           {record.listNoRekKreLink.join(", ")}
@@ -989,7 +1018,7 @@ const InformasiPinjaman = () => {
                         </Col>
                       </Row>
                       {record.ketNonPPAP && (
-                        <Row gutter={[16, 8]} style={{ marginTop: 8 }}>
+                        <Row gutter={[16, 8]} className="mt-2">
                           <Col span={24}>
                             <strong>Keterangan Non PPAP:</strong>{" "}
                             {record.ketNonPPAP}
@@ -1010,10 +1039,8 @@ const InformasiPinjaman = () => {
   };
 
   return (
-    <div>
-      <Title level={2} className="mb-6">
-        Informasi Pinjaman
-      </Title>
+    <div className="space-y-4">
+      <Title level={2} className="mb-4 text-gray-800">Informasi Pinjaman</Title>
 
       {renderBreadcrumb()}
 
@@ -1026,16 +1053,16 @@ const InformasiPinjaman = () => {
       )}
       {currentStep === "kreditList" && (
         <Space direction="vertical" style={{ width: "100%" }}>
-          <Button onClick={() => setCurrentStep("cifList")}>
-            ← Kembali ke Daftar CIF
+          <Button icon={<LeftOutlined />} type="text" onClick={() => setCurrentStep("cifList")} className="mb-2">
+            Kembali ke Daftar CIF
           </Button>
           {renderKreditList()}
         </Space>
       )}
       {currentStep === "kreditDetail" && (
         <Space direction="vertical" style={{ width: "100%" }}>
-          <Button onClick={() => setCurrentStep("kreditList")}>
-            ← Kembali ke Daftar Kredit
+          <Button icon={<LeftOutlined />} type="text" onClick={() => setCurrentStep("kreditList")} className="mb-2">
+            Kembali ke Daftar Kredit
           </Button>
           {renderKreditDetail()}
         </Space>
