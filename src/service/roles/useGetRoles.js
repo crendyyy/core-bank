@@ -10,7 +10,7 @@ export const useGetRoles = () => {
   const query = useQuery({
     queryKey: cacheKey,
     staleTime: Infinity,
-    queryFn: () => axiosClient._get(`/api/v1/Roles`),
+    queryFn: () => axiosClient._get(`/Roles`),
   });
 
   return { ...query, data: query.data?.data };
@@ -23,7 +23,7 @@ export const useGetRolesAction = () => {
 
   const query = useQuery({
     queryKey: cacheKey,
-    queryFn: () => axiosClient._get(`/api/v1/User/GetActions`),
+    queryFn: () => axiosClient._get(`/User/GetActions`),
   });
 
   return { ...query, data: query.data?.data };

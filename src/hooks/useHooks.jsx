@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useUserContext } from "../components/context/userContext";
 import { useNavigation } from "../components/context/NavigationContext";
 const useAxios = () => {
-  const BASE_URL = "/api";
+  const BASE_URL = import.meta.env.VITE_API_BASEURL;
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -67,7 +67,7 @@ const useAxios = () => {
           const refreshToken = localStorage.getItem("refreshToken");
           const accessToken = localStorage.getItem("token");
 
-          const res = await axios.post("/api/api/v1/Login/refresh-token", {
+          const res = await axios.post(`${BASE_URL}Login/refresh-token`, {
             refreshToken,
             accessToken
           });

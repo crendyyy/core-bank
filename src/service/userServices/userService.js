@@ -12,7 +12,7 @@ export const useLogin = () => {
           "Content-Type": "application/json",
         },
       };
-      return axiosClient._post("/api/v1/login/login", credentials, config, {
+      return axiosClient._post("/login/login", credentials, config, {
         withCredentials: true,
       });
     },
@@ -25,7 +25,7 @@ export const useGetCurrentUser = () => {
 
   const query = useQuery({
     queryKey: cacheKey,
-    queryFn: () => axiosClient._get("/api/v1/User/GetCurrentUser"),
+    queryFn: () => axiosClient._get("/User/GetCurrentUser"),
   });
 
   return { ...query, data: query.data?.data };
@@ -39,7 +39,7 @@ export const useUserValidasi = () => {
   return useMutation({
     mutationFn: (data) => {
       //   toast.loading("Create owner....");
-      return axiosClient._post(`/api/v1/Login/Validasi`, data);
+      return axiosClient._post(`/Login/Validasi`, data);
     },
 
     onSuccess: (response) => {

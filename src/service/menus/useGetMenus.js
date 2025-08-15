@@ -9,7 +9,7 @@ export const useGetAllMenus = () => {
 
   const query = useQuery({
     queryKey: cacheKey,
-    queryFn: () => axiosClient._get(`/api/v1/User/GetAllMenus`),
+    queryFn: () => axiosClient._get(`/User/GetAllMenus`),
   });
 
   return { ...query, data: query.data?.data };
@@ -22,7 +22,7 @@ export const useGetUserMenusByModule = () => {
 
   const query = useQuery({
     queryKey: cacheKey,
-    queryFn: () => axiosClient._get(`/api/v1/User/GetUserMenusByModule`),
+    queryFn: () => axiosClient._get(`/User/GetUserMenusByModule`),
   });
 
   return { ...query, data: query.data?.data };
@@ -36,7 +36,7 @@ export const useGetUserPermissions = (route) => {
   const query = useQuery({
     queryKey: cacheKey,
     staleTime: Infinity,
-    queryFn: () => axiosClient._get(`/api/v1/User/GetUserPermissions/${route}`),
+    queryFn: () => axiosClient._get(`/User/GetUserPermissions${route}`),
   });
 
   return { ...query, data: query.data?.data };
@@ -49,13 +49,13 @@ export const useGetUserNavigation = () => {
 
   const query = useQuery({
     queryKey: cacheKey,
-    queryFn: () => axiosClient._get(`/api/v1/User/GetNavigation`),
+    queryFn: () => axiosClient._get(`/User/GetNavigation`),
   });
 
   return { ...query, data: query.data?.data };
 };
 
 export const fetchUserNavigation = async (axiosClient) => {
-  const res = await axiosClient._get("/api/v1/User/GetNavigation");
+  const res = await axiosClient._get("/User/GetNavigation");
   return res.data; // sesuai dengan data: query.data?.data
 };

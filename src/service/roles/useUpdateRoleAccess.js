@@ -11,7 +11,7 @@ export const useUpdateRolesAccess = (roleId) => {
   return useMutation({
     mutationFn: ({id, data}) => {
       toast.loading("Create Role Access....");
-      return axiosClient._post(`/api/v1/Roles/${id}/access/bulk`, data);
+      return axiosClient._post(`/Roles/${id}/access/bulk`, data);
     },
 
     onSuccess: (response) => {

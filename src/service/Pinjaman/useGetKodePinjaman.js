@@ -1,16 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import userKeys from ".";
 import useAxios from "../../hooks/useHooks";
+import PinjamanKeys from ".";
 
-export const useGetAllUser = () => {
+export const useGetKodePinjaman = () => {
   const axiosClient = useAxios();
 
-  const cacheKey = userKeys.listsUser;
+  const cacheKey = PinjamanKeys.listsKodePinjaman
 
   const query = useQuery({
     queryKey: cacheKey,
-    staleTime: Infinity,
-    queryFn: () => axiosClient._get(`/User/GetAllUser`),
+    queryFn: () =>
+      axiosClient._get(`/Pinjaman/GetKodePinjaman`),
   });
 
   return { ...query, data: query.data?.data };

@@ -9,7 +9,7 @@ export const useGetRolesAccess = (roleId) => {
 
   const query = useQuery({
     queryKey: cacheKey,
-    queryFn: () => axiosClient._get(`/api/v1/Roles/${roleId}/access`),
+    queryFn: () => axiosClient._get(`/Roles/${roleId}/access`),
     enabled: !!roleId,
   });
 

@@ -11,7 +11,7 @@ export const useUpdateUser = () => {
   return useMutation({
     mutationFn: ({ id, data }) => {
       toast.loading("Update User....");
-      return axiosClient._patch(`/api/v1/User/UpdateUser/${id}`, data);
+      return axiosClient._patch(`/User/UpdateUser/${id}`, data);
     },
 
     onSuccess: (response) => {

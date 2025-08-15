@@ -9,7 +9,7 @@ export const useGetJabatan = (kdPos) => {
 
   const query = useQuery({
     queryKey: cacheKey,
-    queryFn: () => axiosClient._get(`/api/v1/jabatan/${kdPos}`),
+    queryFn: () => axiosClient._get(`/jabatan/${kdPos}`),
   });
 
   return { ...query, data: query.data?.data };

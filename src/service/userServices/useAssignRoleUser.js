@@ -11,7 +11,7 @@ export const useAssignRolesUser = () => {
   return useMutation({
     mutationFn: (data) => {
       toast.loading("Assign Role User....");
-      return axiosClient._post(`/api/v1/User/AssignRole`, data);
+      return axiosClient._post(`/User/AssignRole`, data);
     },
 
     onSuccess: (response) => {

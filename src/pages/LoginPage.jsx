@@ -255,23 +255,6 @@ const LoginPage = () => {
                 {loginMutation.isPending ? "Memproses..." : "Masuk"}
               </button>
             </Form.Item>
-
-            {formSubmitted && (
-              <div
-                className="mt-4 p-4 rounded-lg"
-                style={{ background: bgLight }}
-              >
-                <Text strong style={{ color: secondaryColor }}>
-                  Data Tersimpan:
-                </Text>
-                <pre
-                  className="mt-2 p-2 rounded"
-                  style={{ background: "#fff", fontSize: "12px" }}
-                >
-                  {JSON.stringify(loginValues, null, 2)}
-                </pre>
-              </div>
-            )}
           </Form>
 
           <div className="flex justify-end items-center mt-2">

@@ -1,24 +1,24 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useAxios from "../../hooks/useHooks";
-import rolesKeys from ".";
 import useLoadingToast from "../../hooks/useToast";
+import GLDoubleEntKeys from ".";
 
-export const useUpdateRoles = () => {
+export const useDeleteGLDoubleEntry = () => {
   const queryClient = useQueryClient();
   const axiosClient = useAxios();
   const toast = useLoadingToast();
 
   return useMutation({
-    mutationFn: ({ id, data }) => {
-      toast.loading("Update Role....");
-      return axiosClient._patch(`/Roles/${id}`, data);
+    mutationFn: (id) => {
+      toast.loading("Delete GLDoubleEntry....");
+      return axiosClient._delete(`/GlDoubleEntry/DeleteGlJournal/${id}`);
     },
 
     onSuccess: (response) => {
-      toast.update("Role Update successfully.", "success");
+      toast.update("GLDoubleEntry Delete successfully.", "success");
 
       // Refresh data related to the stock after a successful update
-      queryClient.invalidateQueries({ queryKey: rolesKeys.lists });
+      queryClient.invalidateQueries({ queryKey: GLDoubleEntKeys.lists });
     },
 
     onError: (response) => {

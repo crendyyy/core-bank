@@ -11,7 +11,7 @@ export const useCreateRoles = () => {
   return useMutation({
     mutationFn: (data) => {
       toast.loading("Create Role....");
-      return axiosClient._post(`/api/v1/Roles`, data);
+      return axiosClient._post(`/Roles`, data);
     },
 
     onSuccess: (response) => {

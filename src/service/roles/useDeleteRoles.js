@@ -11,7 +11,7 @@ export const useDeleteRoles = () => {
   return useMutation({
     mutationFn: (id) => {
       toast.loading("Deleting Role...");
-      return axiosClient._delete(`/api/v1/Roles/${id}`);
+      return axiosClient._delete(`/Roles/${id}`);
     },
 
     onSuccess: (response) => {

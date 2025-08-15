@@ -9,7 +9,7 @@ export const useGetCodeBank = () => {
 
   const query = useQuery({
     queryKey: cacheKey,
-    queryFn: () => axiosClient._get(`/api/v1/Login/GetKantor`),
+    queryFn: () => axiosClient._get(`/Login/GetKantor`),
   });
 
   return { ...query, data: query.data?.data };
@@ -23,7 +23,7 @@ export const useGetBranch = () => {
   const query = useQuery({
     queryKey: cacheKey,
     staleTime: Infinity,
-    queryFn: () => axiosClient._get(`/api/v1/User/GetHakAkses`),
+    queryFn: () => axiosClient._get(`/User/GetHakAkses`),
   });
 
   return { ...query, data: query.data?.data };

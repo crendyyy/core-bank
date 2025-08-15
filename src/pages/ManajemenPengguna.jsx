@@ -48,8 +48,6 @@ const ManajemenRolePengguna = () => {
   const [formUser] = Form.useForm();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
-  const [searchText, setSearchText] = useState("");
-  const [isRoleModalVisible, setIsRoleModalVisible] = useState(false);
   const [isUserModalVisible, setIsUserModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedRole, setSelectedRole] = useState(null);
@@ -87,7 +85,6 @@ const ManajemenRolePengguna = () => {
           data: { roleIds: newRoles },
         });
 
-        setIsRoleModalVisible(false);
         setSelectedUser(null);
         setSelectedRole(null);
         formPermit.resetFields();
@@ -213,7 +210,6 @@ const ManajemenRolePengguna = () => {
   }, [usersData]);
 
   const handleSearch = (value) => {
-    setSearchText(value);
     const filtered = users.filter(
       (user) =>
         user.userId.toLowerCase().includes(value.toLowerCase()) ||

@@ -11,7 +11,7 @@ export const useCreateUser = () => {
   return useMutation({
     mutationFn: (data) => {
       toast.loading("Create User....");
-      return axiosClient._post(`/api/v1/User/CreateUser`, data);
+      return axiosClient._post(`/User/CreateUser`, data);
     },
 
     onSuccess: (response) => {
